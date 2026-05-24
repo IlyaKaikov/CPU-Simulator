@@ -38,6 +38,15 @@ EncodedInstruction makeMul(Register destination, Register source)
     };
 }
 
+EncodedInstruction makeCmp(Register left, Register right)
+{
+    return EncodedInstruction{
+        static_cast<std::uint8_t>(OpCode::Cmp),
+        static_cast<std::uint8_t>(left),
+        static_cast<std::int16_t>(right),
+    };
+}
+
 EncodedInstruction makeHalt()
 {
     return EncodedInstruction{

@@ -16,6 +16,8 @@ void CPU::reset()
     memory_.reset();
     pc_ = initial_pc;
     sp_ = initial_sp;
+    zero_flag_ = false;
+    sign_flag_ = false;
     halted_ = false;
 }
 
@@ -80,6 +82,16 @@ const Memory& CPU::memory() const
     return memory_;
 }
 
+bool CPU::zeroFlag() const
+{
+    return zero_flag_;
+}
+
+bool CPU::signFlag() const
+{
+    return sign_flag_;
+}
+
 void CPU::execute(const EncodedInstruction& instruction)
 {
     const auto opcode = static_cast<OpCode>(instruction.opcode);
@@ -94,18 +106,28 @@ void CPU::execute(const EncodedInstruction& instruction)
         auto& destination = registers_.at(registerIndex(static_cast<Register>(instruction.a)));
         const auto source = registers_.at(registerIndex(static_cast<Register>(instruction.b)));
         destination += source;
+        updateFlags(destination);
         break;
     }
     case OpCode::Sub: {
         auto& destination = registers_.at(registerIndex(static_cast<Register>(instruction.a)));
         const auto source = registers_.at(registerIndex(static_cast<Register>(instruction.b)));
         destination -= source;
+        updateFlags(destination);
         break;
     }
     case OpCode::Mul: {
         auto& destination = registers_.at(registerIndex(static_cast<Register>(instruction.a)));
         const auto source = registers_.at(registerIndex(static_cast<Register>(instruction.b)));
         destination *= source;
+        updateFlags(destination);
+        break;
+    }
+    case OpCode::Cmp: {
+        const auto destination = registers_.at(registerIndex(static_cast<Register>(instruction.a)));
+        const auto source = registers_.at(registerIndex(static_cast<Register>(instruction.b)));
+        const auto result = destination - source;
+        updateFlags(result);
         break;
     }
     case OpCode::Halt:
@@ -114,6 +136,12 @@ void CPU::execute(const EncodedInstruction& instruction)
     default:
         throw std::runtime_error("unknown opcode: " + std::to_string(instruction.opcode));
     }
+}
+
+void CPU::updateFlags(std::int32_t result)
+{
+    zero_flag_ = result == 0;
+    sign_flag_ = result < 0;
 }
 
 std::size_t CPU::registerIndex(Register reg) const

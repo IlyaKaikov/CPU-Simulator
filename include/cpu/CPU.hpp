@@ -27,16 +27,21 @@ public:
     [[nodiscard]] std::int32_t reg(Register reg) const;
     [[nodiscard]] std::uint32_t pc() const;
     [[nodiscard]] std::uint32_t sp() const;
+    [[nodiscard]] bool zeroFlag() const;
+    [[nodiscard]] bool signFlag() const;
     [[nodiscard]] const Memory& memory() const;
 
 private:
     void execute(const EncodedInstruction& instruction);
+    void updateFlags(std::int32_t result);
     [[nodiscard]] std::size_t registerIndex(Register reg) const;
 
     std::array<std::int32_t, register_count> registers_{};
     Memory memory_{};
     std::uint32_t pc_{initial_pc};
     std::uint32_t sp_{initial_sp};
+    bool zero_flag_{false};
+    bool sign_flag_{false};
     bool halted_{false};
 };
 

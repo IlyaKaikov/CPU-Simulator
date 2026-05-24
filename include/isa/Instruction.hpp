@@ -10,6 +10,7 @@ enum class OpCode : std::uint8_t {
     Add = 0x02,
     Sub = 0x03,
     Mul = 0x04,
+    Cmp = 0x05,
     Halt = 0xff,
 };
 
@@ -34,6 +35,7 @@ EncodedInstruction makeMov(Register destination, std::int16_t immediate);
 EncodedInstruction makeAdd(Register destination, Register source);
 EncodedInstruction makeSub(Register destination, Register source);
 EncodedInstruction makeMul(Register destination, Register source);
+EncodedInstruction makeCmp(Register left, Register right);
 EncodedInstruction makeHalt();
 
 }
