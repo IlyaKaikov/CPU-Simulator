@@ -7,9 +7,10 @@
 int main()
 {
     const std::array program{
-        sim::makeMov(sim::Register::R1, 5),
-        sim::makeMov(sim::Register::R2, 7),
-        sim::makeAdd(sim::Register::R1, sim::Register::R2),
+        sim::makeMov(sim::Register::R1, 10),
+        sim::makeMov(sim::Register::R2, 3),
+        sim::makeSub(sim::Register::R1, sim::Register::R2),
+        sim::makeMul(sim::Register::R1, sim::Register::R2),
         sim::makeHalt(),
     };
 

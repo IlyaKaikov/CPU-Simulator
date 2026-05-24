@@ -20,6 +20,24 @@ EncodedInstruction makeAdd(Register destination, Register source)
     };
 }
 
+EncodedInstruction makeSub(Register destination, Register source)
+{
+    return EncodedInstruction{
+        static_cast<std::uint8_t>(OpCode::Sub),
+        static_cast<std::uint8_t>(destination),
+        static_cast<std::int16_t>(source),
+    };
+}
+
+EncodedInstruction makeMul(Register destination, Register source)
+{
+    return EncodedInstruction{
+        static_cast<std::uint8_t>(OpCode::Mul),
+        static_cast<std::uint8_t>(destination),
+        static_cast<std::int16_t>(source),
+    };
+}
+
 EncodedInstruction makeHalt()
 {
     return EncodedInstruction{

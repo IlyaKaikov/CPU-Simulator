@@ -8,6 +8,8 @@ enum class OpCode : std::uint8_t {
     Nop = 0x00,
     Mov = 0x01,
     Add = 0x02,
+    Sub = 0x03,
+    Mul = 0x04,
     Halt = 0xff,
 };
 
@@ -30,6 +32,8 @@ struct EncodedInstruction {
 
 EncodedInstruction makeMov(Register destination, std::int16_t immediate);
 EncodedInstruction makeAdd(Register destination, Register source);
+EncodedInstruction makeSub(Register destination, Register source);
+EncodedInstruction makeMul(Register destination, Register source);
 EncodedInstruction makeHalt();
 
 }

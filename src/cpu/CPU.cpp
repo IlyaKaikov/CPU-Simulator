@@ -96,6 +96,18 @@ void CPU::execute(const EncodedInstruction& instruction)
         destination += source;
         break;
     }
+    case OpCode::Sub: {
+        auto& destination = registers_.at(registerIndex(static_cast<Register>(instruction.a)));
+        const auto source = registers_.at(registerIndex(static_cast<Register>(instruction.b)));
+        destination -= source;
+        break;
+    }
+    case OpCode::Mul: {
+        auto& destination = registers_.at(registerIndex(static_cast<Register>(instruction.a)));
+        const auto source = registers_.at(registerIndex(static_cast<Register>(instruction.b)));
+        destination *= source;
+        break;
+    }
     case OpCode::Halt:
         halted_ = true;
         break;

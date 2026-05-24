@@ -17,7 +17,7 @@ On Windows, good options are:
 - MSYS2/MinGW-w64 with CMake
 - LLVM/Clang with CMake
 
-## Run Milestone 1 Demo
+## Run Demo
 
 ```powershell
 .\build\Debug\cpu_sim.exe
@@ -26,5 +26,5 @@ On Windows, good options are:
 Expected output:
 
 ```text
-R1 = 12
+R1 = 21
 ```
