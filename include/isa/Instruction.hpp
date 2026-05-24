@@ -11,6 +11,11 @@ enum class OpCode : std::uint8_t {
     Sub = 0x03,
     Mul = 0x04,
     Cmp = 0x05,
+    Jmp = 0x06,
+    Je = 0x07,
+    Jne = 0x08,
+    Jg = 0x09,
+    Jl = 0x0a,
     Halt = 0xff,
 };
 
@@ -36,6 +41,11 @@ EncodedInstruction makeAdd(Register destination, Register source);
 EncodedInstruction makeSub(Register destination, Register source);
 EncodedInstruction makeMul(Register destination, Register source);
 EncodedInstruction makeCmp(Register left, Register right);
+EncodedInstruction makeJmp(std::uint16_t targetAddress);
+EncodedInstruction makeJe(std::uint16_t targetAddress);
+EncodedInstruction makeJne(std::uint16_t targetAddress);
+EncodedInstruction makeJg(std::uint16_t targetAddress);
+EncodedInstruction makeJl(std::uint16_t targetAddress);
 EncodedInstruction makeHalt();
 
 }

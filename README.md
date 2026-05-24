@@ -26,5 +26,9 @@ On Windows, good options are:
 Expected output:
 
 ```text
-R1 = 21
+Milestone 2 demo: sum 3 + 2 + 1
+R1 = 0
+R2 = 6
+ZF = 1
+SF = 0
 ```

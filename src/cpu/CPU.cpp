@@ -124,12 +124,35 @@ void CPU::execute(const EncodedInstruction& instruction)
         break;
     }
     case OpCode::Cmp: {
-        const auto destination = registers_.at(registerIndex(static_cast<Register>(instruction.a)));
-        const auto source = registers_.at(registerIndex(static_cast<Register>(instruction.b)));
-        const auto result = destination - source;
+        const auto left = registers_.at(registerIndex(static_cast<Register>(instruction.a)));
+        const auto right = registers_.at(registerIndex(static_cast<Register>(instruction.b)));
+        const auto result = left - right;
         updateFlags(result);
         break;
     }
+    case OpCode::Jmp:
+        pc_ = static_cast<std::uint16_t>(instruction.b);
+        break;
+    case OpCode::Je:
+        if (zero_flag_) {
+            pc_ = static_cast<std::uint16_t>(instruction.b);
+        }
+        break;
+    case OpCode::Jne:
+        if (!zero_flag_) {
+            pc_ = static_cast<std::uint16_t>(instruction.b);
+        }
+        break;
+    case OpCode::Jg:
+        if (!zero_flag_ && !sign_flag_) {
+            pc_ = static_cast<std::uint16_t>(instruction.b);
+        }
+        break;
+    case OpCode::Jl:
+        if (sign_flag_) {
+            pc_ = static_cast<std::uint16_t>(instruction.b);
+        }
+        break;
     case OpCode::Halt:
         halted_ = true;
         break;

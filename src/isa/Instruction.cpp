@@ -2,6 +2,19 @@
 
 namespace sim {
 
+namespace {
+
+EncodedInstruction makeJump(OpCode opcode, std::uint16_t targetAddress)
+{
+    return EncodedInstruction{
+        static_cast<std::uint8_t>(opcode),
+        0,
+        static_cast<std::int16_t>(targetAddress),
+    };
+}
+
+}
+
 EncodedInstruction makeMov(Register destination, std::int16_t immediate)
 {
     return EncodedInstruction{
@@ -45,6 +58,31 @@ EncodedInstruction makeCmp(Register left, Register right)
         static_cast<std::uint8_t>(left),
         static_cast<std::int16_t>(right),
     };
+}
+
+EncodedInstruction makeJmp(std::uint16_t targetAddress)
+{
+    return makeJump(OpCode::Jmp, targetAddress);
+}
+
+EncodedInstruction makeJe(std::uint16_t targetAddress)
+{
+    return makeJump(OpCode::Je, targetAddress);
+}
+
+EncodedInstruction makeJne(std::uint16_t targetAddress)
+{
+    return makeJump(OpCode::Jne, targetAddress);
+}
+
+EncodedInstruction makeJg(std::uint16_t targetAddress)
+{
+    return makeJump(OpCode::Jg, targetAddress);
+}
+
+EncodedInstruction makeJl(std::uint16_t targetAddress)
+{
+    return makeJump(OpCode::Jl, targetAddress);
 }
 
 EncodedInstruction makeHalt()
