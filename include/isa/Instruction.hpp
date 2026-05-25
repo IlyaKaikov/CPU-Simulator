@@ -16,6 +16,12 @@ enum class OpCode : std::uint8_t {
     Jne = 0x08,
     Jg = 0x09,
     Jl = 0x0a,
+    Load = 0x0b,
+    Store = 0x0c,
+    Push = 0x0d,
+    Pop = 0x0e,
+    Call = 0x0f,
+    Ret = 0x10,
     Halt = 0xff,
 };
 
@@ -46,6 +52,12 @@ EncodedInstruction makeJe(std::uint16_t targetAddress);
 EncodedInstruction makeJne(std::uint16_t targetAddress);
 EncodedInstruction makeJg(std::uint16_t targetAddress);
 EncodedInstruction makeJl(std::uint16_t targetAddress);
+EncodedInstruction makeLoad(Register destination, std::uint16_t address);
+EncodedInstruction makeStore(Register source, std::uint16_t address);
+EncodedInstruction makePush(Register source);
+EncodedInstruction makePop(Register destination);
+EncodedInstruction makeCall(std::uint16_t targetAddress);
+EncodedInstruction makeRet();
 EncodedInstruction makeHalt();
 
 }

@@ -85,6 +85,56 @@ EncodedInstruction makeJl(std::uint16_t targetAddress)
     return makeJump(OpCode::Jl, targetAddress);
 }
 
+EncodedInstruction makeLoad(Register destination, std::uint16_t address)
+{
+    return EncodedInstruction{
+        static_cast<std::uint8_t>(OpCode::Load),
+        static_cast<std::uint8_t>(destination),
+        static_cast<std::int16_t>(address),
+    };
+}
+
+EncodedInstruction makeStore(Register source, std::uint16_t address)
+{
+    return EncodedInstruction{
+        static_cast<std::uint8_t>(OpCode::Store),
+        static_cast<std::uint8_t>(source),
+        static_cast<std::int16_t>(address),
+    };
+}
+
+EncodedInstruction makePush(Register source)
+{
+    return EncodedInstruction{
+        static_cast<std::uint8_t>(OpCode::Push),
+        static_cast<std::uint8_t>(source),
+        0,
+    };
+}
+
+EncodedInstruction makePop(Register destination)
+{
+    return EncodedInstruction{
+        static_cast<std::uint8_t>(OpCode::Pop),
+        static_cast<std::uint8_t>(destination),
+        0,
+    };
+}
+
+EncodedInstruction makeCall(std::uint16_t targetAddress)
+{
+    return makeJump(OpCode::Call, targetAddress);
+}
+
+EncodedInstruction makeRet()
+{
+    return EncodedInstruction{
+        static_cast<std::uint8_t>(OpCode::Ret),
+        0,
+        0,
+    };
+}
+
 EncodedInstruction makeHalt()
 {
     return EncodedInstruction{

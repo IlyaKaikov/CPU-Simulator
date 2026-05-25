@@ -28,7 +28,11 @@ target_link_libraries(cpu_sim PRIVATE cpu_simulator)
 
 enable_testing()
 
-add_executable(cpu_sim_tests tests/cpu_tests.cpp)
-target_link_libraries(cpu_sim_tests PRIVATE cpu_simulator)
+add_executable(milestone2_tests tests/milestone2_tests.cpp)
+target_link_libraries(milestone2_tests PRIVATE cpu_simulator)
 
-add_test(NAME cpu_sim_tests COMMAND cpu_sim_tests)
+add_executable(milestone3_tests tests/milestone3_tests.cpp)
+target_link_libraries(milestone3_tests PRIVATE cpu_simulator)
+
+add_test(NAME milestone2_tests COMMAND milestone2_tests)
+add_test(NAME milestone3_tests COMMAND milestone3_tests)

@@ -22,6 +22,29 @@ void Memory::writeByte(std::uint32_t address, std::uint8_t value)
     data_.at(address) = value;
 }
 
+std::int32_t Memory::readInt32(std::uint32_t address) const
+{
+    ensureRange(address, sizeof(std::int32_t));
+
+    const auto byte0 = static_cast<std::uint32_t>(data_.at(address));
+    const auto byte1 = static_cast<std::uint32_t>(data_.at(address + 1)) << 8U;
+    const auto byte2 = static_cast<std::uint32_t>(data_.at(address + 2)) << 16U;
+    const auto byte3 = static_cast<std::uint32_t>(data_.at(address + 3)) << 24U;
+
+    return static_cast<std::int32_t>(byte0 | byte1 | byte2 | byte3);
+}
+
+void Memory::writeInt32(std::uint32_t address, std::int32_t value)
+{
+    ensureRange(address, sizeof(std::int32_t));
+
+    const auto bits = static_cast<std::uint32_t>(value);
+    data_.at(address) = static_cast<std::uint8_t>(bits & 0x000000ffU);
+    data_.at(address + 1) = static_cast<std::uint8_t>((bits >> 8U) & 0x000000ffU);
+    data_.at(address + 2) = static_cast<std::uint8_t>((bits >> 16U) & 0x000000ffU);
+    data_.at(address + 3) = static_cast<std::uint8_t>((bits >> 24U) & 0x000000ffU);
+}
+
 EncodedInstruction Memory::readInstruction(std::uint32_t address) const
 {
     ensureRange(address, instruction_size);

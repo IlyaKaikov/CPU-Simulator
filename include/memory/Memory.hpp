@@ -18,6 +18,9 @@ public:
     [[nodiscard]] std::uint8_t readByte(std::uint32_t address) const;
     void writeByte(std::uint32_t address, std::uint8_t value);
 
+    [[nodiscard]] std::int32_t readInt32(std::uint32_t address) const;
+    void writeInt32(std::uint32_t address, std::int32_t value);
+
     [[nodiscard]] EncodedInstruction readInstruction(std::uint32_t address) const;
     void writeInstruction(std::uint32_t address, const EncodedInstruction& instruction);
 
