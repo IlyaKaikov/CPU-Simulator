@@ -12,6 +12,7 @@ class Memory {
 public:
     static constexpr std::size_t size = 64 * 1024;
     static constexpr std::size_t instruction_size = 4;
+    static constexpr std::size_t word_size = sizeof(std::int32_t);
 
     void reset();
 

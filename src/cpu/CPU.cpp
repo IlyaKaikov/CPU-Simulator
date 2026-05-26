@@ -153,6 +153,40 @@ void CPU::execute(const EncodedInstruction& instruction)
             pc_ = static_cast<std::uint16_t>(instruction.b);
         }
         break;
+    case OpCode::Load: {
+        auto& destination = registers_.at(registerIndex(static_cast<Register>(instruction.a)));
+        destination = memory_.readInt32(static_cast<std::uint16_t>(instruction.b));
+        break;
+    }
+    case OpCode::Store: {
+        const auto source = registers_.at(registerIndex(static_cast<Register>(instruction.a)));
+        memory_.writeInt32(static_cast<std::uint16_t>(instruction.b), source);
+        break;
+    }
+    case OpCode::Push: {
+        const auto source = registers_.at(registerIndex(static_cast<Register>(instruction.a)));
+        sp_ -= Memory::word_size;
+        memory_.writeInt32(sp_, source);
+        break;
+    }
+    case OpCode::Pop: {
+        const auto value = memory_.readInt32(sp_);
+        auto& destination = registers_.at(registerIndex(static_cast<Register>(instruction.a)));
+        destination = value;
+        sp_ += Memory::word_size;
+        break;
+    }
+    case OpCode::Call: {
+        sp_ -= Memory::word_size;
+        memory_.writeInt32(sp_, pc_);
+        pc_ = static_cast<std::uint16_t>(instruction.b);
+        break;
+    }
+    case OpCode::Ret: {
+        pc_ = memory_.readInt32(sp_);
+        sp_ += Memory::word_size;
+        break;
+    }
     case OpCode::Halt:
         halted_ = true;
         break;
