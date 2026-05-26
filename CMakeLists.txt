@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(cpu_simulator
+    src/assembler/Assembler.cpp
     src/cpu/CPU.cpp
     src/isa/Instruction.cpp
     src/memory/Memory.cpp
@@ -34,5 +35,9 @@ target_link_libraries(milestone2_tests PRIVATE cpu_simulator)
 add_executable(milestone3_tests tests/milestone3_tests.cpp)
 target_link_libraries(milestone3_tests PRIVATE cpu_simulator)
 
+add_executable(milestone4_tests tests/milestone4_tests.cpp)
+target_link_libraries(milestone4_tests PRIVATE cpu_simulator)
+
 add_test(NAME milestone2_tests COMMAND milestone2_tests)
 add_test(NAME milestone3_tests COMMAND milestone3_tests)
+add_test(NAME milestone4_tests COMMAND milestone4_tests)
