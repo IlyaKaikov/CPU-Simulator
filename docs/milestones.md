@@ -1,6 +1,6 @@
 # Milestone Roadmap
 
-## Milestone 1 — CPU Skeleton
+## Milestone 1 - CPU Skeleton
 Implement:
 - registers
 - memory
@@ -24,7 +24,7 @@ R1 = 12
 
 ---
 
-## Milestone 2 — Control Flow
+## Milestone 2 - Control Flow
 Implement:
 - SUB
 - MUL
@@ -38,7 +38,7 @@ Goal:
 
 ---
 
-## Milestone 3 — Memory + Stack
+## Milestone 3 - Memory + Stack
 Implement:
 - LOAD
 - STORE
@@ -53,16 +53,36 @@ Goal:
 
 ---
 
-## Milestone 4 — Assembler
+## Milestone 4 - Assembler
 Implement:
 - lexer/parser
+- comments and blank lines
+- decimal and hex numbers
 - labels
-- instruction encoding
-- binary generation
+- instruction generation as `EncodedInstruction` values
+- useful parse errors with line numbers
+
+Goal:
+- assemble `.asm` text directly into programs the CPU can run
+- express milestone 2 loops and milestone 3 recursive calls in assembly text
 
 ---
 
-## Milestone 5 — Debugger
+## Milestone 5 - Binary Format + Loader
+Implement:
+- binary file format
+- binary writer
+- binary reader/loader
+- magic/version/header validation
+- CLI path for assembling source to binary
+
+Goal:
+- assemble a `.asm` file into a binary program file
+- load that binary program into the CPU
+
+---
+
+## Milestone 6 - Debugger
 Implement:
 - step
 - continue
@@ -73,7 +93,7 @@ Implement:
 
 ---
 
-## Milestone 6 — Polish
+## Milestone 7 - Polish
 Implement:
 - tests
 - example programs
