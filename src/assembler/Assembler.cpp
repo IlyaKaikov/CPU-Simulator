@@ -1,5 +1,8 @@
 #include "assembler/Assembler.hpp"
 
+#include <cctype>
+#include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -68,6 +71,162 @@ std::string joinTokens(const std::vector<std::string>& tokens)
     return result;
 }
 
+std::string toUpper(std::string_view value)
+{
+    std::string result;
+    result.reserve(value.size());
+    for (const auto ch : value) {
+        result += static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
+    }
+
+    return result;
+}
+
+[[noreturn]] void throwAtLine(std::size_t lineNumber, const std::string& message)
+{
+    throw std::runtime_error("line " + std::to_string(lineNumber) + ": " + message);
+}
+
+Register parseRegister(std::string_view token, std::size_t lineNumber)
+{
+    const auto upper = toUpper(token);
+    if (upper.size() != 2 || upper.at(0) != 'R' || upper.at(1) < '0' || upper.at(1) > '7') {
+        throwAtLine(lineNumber, "invalid register '" + std::string(token) + "'");
+    }
+
+    return static_cast<Register>(upper.at(1) - '0');
+}
+
+int digitValue(char ch)
+{
+    if (ch >= '0' && ch <= '9') {
+        return ch - '0';
+    }
+    if (ch >= 'a' && ch <= 'f') {
+        return ch - 'a' + 10;
+    }
+    if (ch >= 'A' && ch <= 'F') {
+        return ch - 'A' + 10;
+    }
+
+    return -1;
+}
+
+std::int64_t parseInteger(
+    std::string_view token,
+    std::int64_t minimum,
+    std::int64_t maximum,
+    std::size_t lineNumber,
+    std::string_view description)
+{
+    if (token.empty()) {
+        throwAtLine(lineNumber, "missing " + std::string(description));
+    }
+
+    std::size_t index = 0;
+    bool negative = false;
+    if (token.at(index) == '-') {
+        negative = true;
+        ++index;
+    }
+
+    auto base = 10;
+    if (index + 2 <= token.size() && token.at(index) == '0' &&
+        (token.at(index + 1) == 'x' || token.at(index + 1) == 'X')) {
+        base = 16;
+        index += 2;
+    }
+
+    if (index == token.size()) {
+        throwAtLine(lineNumber, "invalid " + std::string(description) + " '" + std::string(token) + "'");
+    }
+
+    std::uint64_t value = 0;
+    for (; index < token.size(); ++index) {
+        const auto digit = digitValue(token.at(index));
+        if (digit < 0 || digit >= base) {
+            throwAtLine(lineNumber, "invalid " + std::string(description) + " '" + std::string(token) + "'");
+        }
+
+        value = value * static_cast<std::uint64_t>(base) + static_cast<std::uint64_t>(digit);
+        if (value > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max())) {
+            throwAtLine(lineNumber, std::string(description) + " out of range '" + std::string(token) + "'");
+        }
+    }
+
+    const auto signedValue = negative ? -static_cast<std::int64_t>(value) : static_cast<std::int64_t>(value);
+    if (signedValue < minimum || signedValue > maximum) {
+        throwAtLine(lineNumber, std::string(description) + " out of range '" + std::string(token) + "'");
+    }
+
+    return signedValue;
+}
+
+std::int16_t parseInt16(std::string_view token, std::size_t lineNumber)
+{
+    return static_cast<std::int16_t>(parseInteger(
+        token,
+        std::numeric_limits<std::int16_t>::min(),
+        std::numeric_limits<std::int16_t>::max(),
+        lineNumber,
+        "int16"));
+}
+
+std::uint16_t parseUInt16(std::string_view token, std::size_t lineNumber)
+{
+    return static_cast<std::uint16_t>(parseInteger(
+        token,
+        0,
+        std::numeric_limits<std::uint16_t>::max(),
+        lineNumber,
+        "uint16"));
+}
+
+void requireOperandCount(const ScannedLine& line, std::size_t expected)
+{
+    if (line.tokens.size() != expected) {
+        throwAtLine(
+            line.lineNumber,
+            "expected " + std::to_string(expected - 1) + " operand(s), got " +
+                std::to_string(line.tokens.size() - 1));
+    }
+}
+
+void validateOperands(const ScannedLine& line)
+{
+    const auto opcode = toUpper(line.tokens.front());
+
+    if (opcode == "NOP" || opcode == "RET" || opcode == "HALT") {
+        requireOperandCount(line, 1);
+    } else if (opcode == "MOV") {
+        requireOperandCount(line, 3);
+        (void)parseRegister(line.tokens.at(1), line.lineNumber);
+        (void)parseInt16(line.tokens.at(2), line.lineNumber);
+    } else if (opcode == "ADD" || opcode == "SUB" || opcode == "MUL" || opcode == "CMP") {
+        requireOperandCount(line, 3);
+        (void)parseRegister(line.tokens.at(1), line.lineNumber);
+        (void)parseRegister(line.tokens.at(2), line.lineNumber);
+    } else if (opcode == "LOAD") {
+        requireOperandCount(line, 3);
+        (void)parseRegister(line.tokens.at(1), line.lineNumber);
+        (void)parseUInt16(line.tokens.at(2), line.lineNumber);
+    } else if (opcode == "STORE") {
+        requireOperandCount(line, 3);
+        (void)parseRegister(line.tokens.at(1), line.lineNumber);
+        (void)parseUInt16(line.tokens.at(2), line.lineNumber);
+    } else if (opcode == "PUSH" || opcode == "POP") {
+        requireOperandCount(line, 2);
+        (void)parseRegister(line.tokens.at(1), line.lineNumber);
+    } else if (
+        opcode == "JMP" || opcode == "JE" || opcode == "JNE" || opcode == "JG" || opcode == "JL" ||
+        opcode == "CALL") {
+        requireOperandCount(line, 2);
+        (void)parseUInt16(line.tokens.at(1), line.lineNumber);
+    } else {
+        throwAtLine(line.lineNumber, "unknown instruction '" + line.tokens.front() + "'");
+    }
+}
+
 std::vector<ScannedLine> scanSource(std::string_view source)
 {
     std::vector<ScannedLine> lines;
@@ -103,6 +262,7 @@ std::vector<EncodedInstruction> Assembler::assemble(std::string_view source) con
 {
     const auto lines = scanSource(source);
     if (!lines.empty()) {
+        validateOperands(lines.front());
         throw std::runtime_error(
             "assembler instruction parsing is not implemented yet at line " +
             std::to_string(lines.front().lineNumber) + ": " + joinTokens(lines.front().tokens));
