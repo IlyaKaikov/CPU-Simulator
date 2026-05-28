@@ -58,19 +58,6 @@ std::vector<std::string> tokenize(std::string_view line)
     return tokens;
 }
 
-std::string joinTokens(const std::vector<std::string>& tokens)
-{
-    std::string result;
-    for (const auto& token : tokens) {
-        if (!result.empty()) {
-            result += ' ';
-        }
-        result += token;
-    }
-
-    return result;
-}
-
 std::string toUpper(std::string_view value)
 {
     std::string result;
@@ -192,39 +179,93 @@ void requireOperandCount(const ScannedLine& line, std::size_t expected)
     }
 }
 
-void validateOperands(const ScannedLine& line)
+EncodedInstruction makeNoOperandInstruction(OpCode opcode)
+{
+    return EncodedInstruction{
+        static_cast<std::uint8_t>(opcode),
+        0,
+        0,
+    };
+}
+
+EncodedInstruction parseInstruction(const ScannedLine& line)
 {
     const auto opcode = toUpper(line.tokens.front());
 
-    if (opcode == "NOP" || opcode == "RET" || opcode == "HALT") {
+    if (opcode == "NOP") {
         requireOperandCount(line, 1);
-    } else if (opcode == "MOV") {
-        requireOperandCount(line, 3);
-        (void)parseRegister(line.tokens.at(1), line.lineNumber);
-        (void)parseInt16(line.tokens.at(2), line.lineNumber);
-    } else if (opcode == "ADD" || opcode == "SUB" || opcode == "MUL" || opcode == "CMP") {
-        requireOperandCount(line, 3);
-        (void)parseRegister(line.tokens.at(1), line.lineNumber);
-        (void)parseRegister(line.tokens.at(2), line.lineNumber);
-    } else if (opcode == "LOAD") {
-        requireOperandCount(line, 3);
-        (void)parseRegister(line.tokens.at(1), line.lineNumber);
-        (void)parseUInt16(line.tokens.at(2), line.lineNumber);
-    } else if (opcode == "STORE") {
-        requireOperandCount(line, 3);
-        (void)parseRegister(line.tokens.at(1), line.lineNumber);
-        (void)parseUInt16(line.tokens.at(2), line.lineNumber);
-    } else if (opcode == "PUSH" || opcode == "POP") {
-        requireOperandCount(line, 2);
-        (void)parseRegister(line.tokens.at(1), line.lineNumber);
-    } else if (
-        opcode == "JMP" || opcode == "JE" || opcode == "JNE" || opcode == "JG" || opcode == "JL" ||
-        opcode == "CALL") {
-        requireOperandCount(line, 2);
-        (void)parseUInt16(line.tokens.at(1), line.lineNumber);
-    } else {
-        throwAtLine(line.lineNumber, "unknown instruction '" + line.tokens.front() + "'");
+        return makeNoOperandInstruction(OpCode::Nop);
     }
+    if (opcode == "RET") {
+        requireOperandCount(line, 1);
+        return makeRet();
+    }
+    if (opcode == "HALT") {
+        requireOperandCount(line, 1);
+        return makeHalt();
+    }
+    if (opcode == "MOV") {
+        requireOperandCount(line, 3);
+        return makeMov(parseRegister(line.tokens.at(1), line.lineNumber), parseInt16(line.tokens.at(2), line.lineNumber));
+    }
+    if (opcode == "ADD") {
+        requireOperandCount(line, 3);
+        return makeAdd(parseRegister(line.tokens.at(1), line.lineNumber), parseRegister(line.tokens.at(2), line.lineNumber));
+    }
+    if (opcode == "SUB") {
+        requireOperandCount(line, 3);
+        return makeSub(parseRegister(line.tokens.at(1), line.lineNumber), parseRegister(line.tokens.at(2), line.lineNumber));
+    }
+    if (opcode == "MUL") {
+        requireOperandCount(line, 3);
+        return makeMul(parseRegister(line.tokens.at(1), line.lineNumber), parseRegister(line.tokens.at(2), line.lineNumber));
+    }
+    if (opcode == "CMP") {
+        requireOperandCount(line, 3);
+        return makeCmp(parseRegister(line.tokens.at(1), line.lineNumber), parseRegister(line.tokens.at(2), line.lineNumber));
+    }
+    if (opcode == "JMP") {
+        requireOperandCount(line, 2);
+        return makeJmp(parseUInt16(line.tokens.at(1), line.lineNumber));
+    }
+    if (opcode == "JE") {
+        requireOperandCount(line, 2);
+        return makeJe(parseUInt16(line.tokens.at(1), line.lineNumber));
+    }
+    if (opcode == "JNE") {
+        requireOperandCount(line, 2);
+        return makeJne(parseUInt16(line.tokens.at(1), line.lineNumber));
+    }
+    if (opcode == "JG") {
+        requireOperandCount(line, 2);
+        return makeJg(parseUInt16(line.tokens.at(1), line.lineNumber));
+    }
+    if (opcode == "JL") {
+        requireOperandCount(line, 2);
+        return makeJl(parseUInt16(line.tokens.at(1), line.lineNumber));
+    }
+    if (opcode == "LOAD") {
+        requireOperandCount(line, 3);
+        return makeLoad(parseRegister(line.tokens.at(1), line.lineNumber), parseUInt16(line.tokens.at(2), line.lineNumber));
+    }
+    if (opcode == "STORE") {
+        requireOperandCount(line, 3);
+        return makeStore(parseRegister(line.tokens.at(1), line.lineNumber), parseUInt16(line.tokens.at(2), line.lineNumber));
+    }
+    if (opcode == "PUSH") {
+        requireOperandCount(line, 2);
+        return makePush(parseRegister(line.tokens.at(1), line.lineNumber));
+    }
+    if (opcode == "POP") {
+        requireOperandCount(line, 2);
+        return makePop(parseRegister(line.tokens.at(1), line.lineNumber));
+    }
+    if (opcode == "CALL") {
+        requireOperandCount(line, 2);
+        return makeCall(parseUInt16(line.tokens.at(1), line.lineNumber));
+    }
+
+    throwAtLine(line.lineNumber, "unknown instruction '" + line.tokens.front() + "'");
 }
 
 std::vector<ScannedLine> scanSource(std::string_view source)
@@ -261,14 +302,14 @@ std::vector<ScannedLine> scanSource(std::string_view source)
 std::vector<EncodedInstruction> Assembler::assemble(std::string_view source) const
 {
     const auto lines = scanSource(source);
-    if (!lines.empty()) {
-        validateOperands(lines.front());
-        throw std::runtime_error(
-            "assembler instruction parsing is not implemented yet at line " +
-            std::to_string(lines.front().lineNumber) + ": " + joinTokens(lines.front().tokens));
+    std::vector<EncodedInstruction> program;
+    program.reserve(lines.size());
+
+    for (const auto& line : lines) {
+        program.push_back(parseInstruction(line));
     }
 
-    return {};
+    return program;
 }
 
 }
