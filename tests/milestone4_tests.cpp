@@ -250,6 +250,181 @@ void runs_assembled_program()
     assert(cpu.reg(sim::Register::R2) == 7);
 }
 
+void collects_labels_without_emitting_instructions()
+{
+    const sim::Assembler assembler;
+    const auto program = assembler.assemble(R"(
+        start:
+        MOV R1, 5
+        _loop_1:
+        ADD R1, R1
+        HALT
+    )");
+
+    assertProgramEquals(
+        program,
+        {
+            sim::makeMov(sim::Register::R1, 5),
+            sim::makeAdd(sim::Register::R1, sim::Register::R1),
+            sim::makeHalt(),
+        });
+}
+
+void rejects_duplicate_labels()
+{
+    const sim::Assembler assembler;
+    bool threw = false;
+
+    try {
+        const auto program = assembler.assemble(R"(
+            loop:
+            MOV R1, 1
+            loop:
+            HALT
+        )");
+        (void)program;
+    } catch (const std::runtime_error& error) {
+        threw = true;
+        const std::string message = error.what();
+        assert(contains(message, "line 4"));
+        assert(contains(message, "duplicate label 'loop'"));
+    }
+
+    assert(threw);
+}
+
+void rejects_malformed_labels()
+{
+    const sim::Assembler assembler;
+    bool threw = false;
+
+    try {
+        const auto program = assembler.assemble("1bad:");
+        (void)program;
+    } catch (const std::runtime_error& error) {
+        threw = true;
+        const std::string message = error.what();
+        assert(contains(message, "line 1"));
+        assert(contains(message, "invalid label '1bad'"));
+    }
+
+    assert(threw);
+}
+
+void rejects_label_and_instruction_on_same_line()
+{
+    const sim::Assembler assembler;
+    bool threw = false;
+
+    try {
+        const auto program = assembler.assemble("loop: MOV R1, 1");
+        (void)program;
+    } catch (const std::runtime_error& error) {
+        threw = true;
+        const std::string message = error.what();
+        assert(contains(message, "line 1"));
+        assert(contains(message, "labels must be on their own line"));
+    }
+
+    assert(threw);
+}
+
+void resolves_jump_labels_to_byte_addresses()
+{
+    const sim::Assembler assembler;
+    const auto program = assembler.assemble(R"(
+        start:
+        JMP end
+        MOV R1, 99
+        end:
+        HALT
+    )");
+
+    assertProgramEquals(
+        program,
+        {
+            sim::makeJmp(2 * sim::Memory::instruction_size),
+            sim::makeMov(sim::Register::R1, 99),
+            sim::makeHalt(),
+        });
+}
+
+void rejects_unknown_labels()
+{
+    const sim::Assembler assembler;
+    bool threw = false;
+
+    try {
+        const auto program = assembler.assemble("JMP missing");
+        (void)program;
+    } catch (const std::runtime_error& error) {
+        threw = true;
+        const std::string message = error.what();
+        assert(contains(message, "line 1"));
+        assert(contains(message, "unknown label 'missing'"));
+    }
+
+    assert(threw);
+}
+
+void runs_assembled_loop_with_label()
+{
+    const sim::Assembler assembler;
+    const auto program = assembler.assemble(R"(
+        MOV R1, 3
+        MOV R2, 0
+        MOV R3, 1
+        loop:
+        ADD R2, R1
+        SUB R1, R3
+        CMP R1, R0
+        JG loop
+        HALT
+    )");
+
+    sim::CPU cpu;
+    cpu.loadProgram(program);
+    cpu.run();
+
+    assert(cpu.halted());
+    assert(cpu.reg(sim::Register::R1) == 0);
+    assert(cpu.reg(sim::Register::R2) == 6);
+    assert(cpu.zeroFlag());
+    assert(!cpu.signFlag());
+}
+
+void runs_assembled_recursive_program_with_labels()
+{
+    const sim::Assembler assembler;
+    const auto program = assembler.assemble(R"(
+        MOV R1, 3
+        CALL sum
+        HALT
+
+        sum:
+        CMP R1, R0
+        JE done
+        PUSH R1
+        MOV R2, 1
+        SUB R1, R2
+        CALL sum
+        POP R2
+        ADD R3, R2
+        done:
+        RET
+    )");
+
+    sim::CPU cpu;
+    cpu.loadProgram(program);
+    cpu.run();
+
+    assert(cpu.halted());
+    assert(cpu.reg(sim::Register::R1) == 0);
+    assert(cpu.reg(sim::Register::R2) == 3);
+    assert(cpu.reg(sim::Register::R3) == 6);
+    assert(cpu.sp() == sim::CPU::initial_sp);
+}
+
 int main()
 {
     assembles_empty_source();
@@ -266,4 +441,12 @@ int main()
     rejects_out_of_range_uint16_values();
     assembles_numeric_instruction_forms();
     runs_assembled_program();
+    collects_labels_without_emitting_instructions();
+    rejects_duplicate_labels();
+    rejects_malformed_labels();
+    rejects_label_and_instruction_on_same_line();
+    resolves_jump_labels_to_byte_addresses();
+    rejects_unknown_labels();
+    runs_assembled_loop_with_label();
+    runs_assembled_recursive_program_with_labels();
 }

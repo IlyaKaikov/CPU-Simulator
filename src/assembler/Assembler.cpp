@@ -1,4 +1,5 @@
 #include "assembler/Assembler.hpp"
+#include "memory/Memory.hpp"
 
 #include <cctype>
 #include <cstdint>
@@ -6,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace sim {
@@ -15,6 +17,11 @@ namespace {
 struct ScannedLine {
     std::size_t lineNumber{};
     std::vector<std::string> tokens{};
+};
+
+struct AssemblyPlan {
+    std::vector<ScannedLine> instructions{};
+    std::unordered_map<std::string, std::uint16_t> labels{};
 };
 
 std::string_view stripComment(std::string_view line)
@@ -72,6 +79,41 @@ std::string toUpper(std::string_view value)
 [[noreturn]] void throwAtLine(std::size_t lineNumber, const std::string& message)
 {
     throw std::runtime_error("line " + std::to_string(lineNumber) + ": " + message);
+}
+
+bool isIdentifierStart(char ch)
+{
+    const auto value = static_cast<unsigned char>(ch);
+    return std::isalpha(value) || ch == '_';
+}
+
+bool isIdentifierPart(char ch)
+{
+    const auto value = static_cast<unsigned char>(ch);
+    return std::isalnum(value) || ch == '_';
+}
+
+void validateLabelName(std::string_view label, std::size_t lineNumber)
+{
+    if (label.empty() || !isIdentifierStart(label.front())) {
+        throwAtLine(lineNumber, "invalid label '" + std::string(label) + "'");
+    }
+
+    for (const auto ch : label.substr(1)) {
+        if (!isIdentifierPart(ch)) {
+            throwAtLine(lineNumber, "invalid label '" + std::string(label) + "'");
+        }
+    }
+}
+
+bool endsWithColon(std::string_view value)
+{
+    return !value.empty() && value.back() == ':';
+}
+
+bool containsColon(std::string_view value)
+{
+    return value.find(':') != std::string_view::npos;
 }
 
 Register parseRegister(std::string_view token, std::size_t lineNumber)
@@ -169,6 +211,29 @@ std::uint16_t parseUInt16(std::string_view token, std::size_t lineNumber)
         "uint16"));
 }
 
+bool looksNumeric(std::string_view token)
+{
+    return !token.empty() && (std::isdigit(static_cast<unsigned char>(token.front())) || token.front() == '-');
+}
+
+std::uint16_t parseTarget(
+    std::string_view token,
+    std::size_t lineNumber,
+    const std::unordered_map<std::string, std::uint16_t>& labels)
+{
+    if (looksNumeric(token)) {
+        return parseUInt16(token, lineNumber);
+    }
+
+    validateLabelName(token, lineNumber);
+    const auto label = labels.find(std::string(token));
+    if (label == labels.end()) {
+        throwAtLine(lineNumber, "unknown label '" + std::string(token) + "'");
+    }
+
+    return label->second;
+}
+
 void requireOperandCount(const ScannedLine& line, std::size_t expected)
 {
     if (line.tokens.size() != expected) {
@@ -188,7 +253,7 @@ EncodedInstruction makeNoOperandInstruction(OpCode opcode)
     };
 }
 
-EncodedInstruction parseInstruction(const ScannedLine& line)
+EncodedInstruction parseInstruction(const ScannedLine& line, const std::unordered_map<std::string, std::uint16_t>& labels)
 {
     const auto opcode = toUpper(line.tokens.front());
 
@@ -226,23 +291,23 @@ EncodedInstruction parseInstruction(const ScannedLine& line)
     }
     if (opcode == "JMP") {
         requireOperandCount(line, 2);
-        return makeJmp(parseUInt16(line.tokens.at(1), line.lineNumber));
+        return makeJmp(parseTarget(line.tokens.at(1), line.lineNumber, labels));
     }
     if (opcode == "JE") {
         requireOperandCount(line, 2);
-        return makeJe(parseUInt16(line.tokens.at(1), line.lineNumber));
+        return makeJe(parseTarget(line.tokens.at(1), line.lineNumber, labels));
     }
     if (opcode == "JNE") {
         requireOperandCount(line, 2);
-        return makeJne(parseUInt16(line.tokens.at(1), line.lineNumber));
+        return makeJne(parseTarget(line.tokens.at(1), line.lineNumber, labels));
     }
     if (opcode == "JG") {
         requireOperandCount(line, 2);
-        return makeJg(parseUInt16(line.tokens.at(1), line.lineNumber));
+        return makeJg(parseTarget(line.tokens.at(1), line.lineNumber, labels));
     }
     if (opcode == "JL") {
         requireOperandCount(line, 2);
-        return makeJl(parseUInt16(line.tokens.at(1), line.lineNumber));
+        return makeJl(parseTarget(line.tokens.at(1), line.lineNumber, labels));
     }
     if (opcode == "LOAD") {
         requireOperandCount(line, 3);
@@ -262,7 +327,7 @@ EncodedInstruction parseInstruction(const ScannedLine& line)
     }
     if (opcode == "CALL") {
         requireOperandCount(line, 2);
-        return makeCall(parseUInt16(line.tokens.at(1), line.lineNumber));
+        return makeCall(parseTarget(line.tokens.at(1), line.lineNumber, labels));
     }
 
     throwAtLine(line.lineNumber, "unknown instruction '" + line.tokens.front() + "'");
@@ -297,16 +362,49 @@ std::vector<ScannedLine> scanSource(std::string_view source)
     return lines;
 }
 
+AssemblyPlan collectLabels(const std::vector<ScannedLine>& lines)
+{
+    AssemblyPlan plan;
+    std::uint32_t address = 0;
+
+    for (const auto& line : lines) {
+        if (line.tokens.size() == 1 && endsWithColon(line.tokens.front())) {
+            const auto label = line.tokens.front().substr(0, line.tokens.front().size() - 1);
+            validateLabelName(label, line.lineNumber);
+
+            if (plan.labels.contains(label)) {
+                throwAtLine(line.lineNumber, "duplicate label '" + label + "'");
+            }
+            if (address > std::numeric_limits<std::uint16_t>::max()) {
+                throwAtLine(line.lineNumber, "label address out of range '" + label + "'");
+            }
+
+            plan.labels.emplace(label, static_cast<std::uint16_t>(address));
+        } else {
+            for (const auto& token : line.tokens) {
+                if (containsColon(token)) {
+                    throwAtLine(line.lineNumber, "labels must be on their own line");
+                }
+            }
+
+            plan.instructions.push_back(line);
+            address += Memory::instruction_size;
+        }
+    }
+
+    return plan;
+}
+
 }
 
 std::vector<EncodedInstruction> Assembler::assemble(std::string_view source) const
 {
-    const auto lines = scanSource(source);
+    const auto plan = collectLabels(scanSource(source));
     std::vector<EncodedInstruction> program;
-    program.reserve(lines.size());
+    program.reserve(plan.instructions.size());
 
-    for (const auto& line : lines) {
-        program.push_back(parseInstruction(line));
+    for (const auto& line : plan.instructions) {
+        program.push_back(parseInstruction(line, plan.labels));
     }
 
     return program;
