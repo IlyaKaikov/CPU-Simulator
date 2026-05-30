@@ -12,6 +12,17 @@
 
 namespace sim {
 
+AssemblyError::AssemblyError(std::size_t line, const std::string& message)
+    : std::runtime_error("line " + std::to_string(line) + ": " + message)
+    , line_(line)
+{
+}
+
+std::size_t AssemblyError::line() const noexcept
+{
+    return line_;
+}
+
 namespace {
 
 struct ScannedLine {
@@ -78,7 +89,7 @@ std::string toUpper(std::string_view value)
 
 [[noreturn]] void throwAtLine(std::size_t lineNumber, const std::string& message)
 {
-    throw std::runtime_error("line " + std::to_string(lineNumber) + ": " + message);
+    throw AssemblyError(lineNumber, message);
 }
 
 bool isIdentifierStart(char ch)

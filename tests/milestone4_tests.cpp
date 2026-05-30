@@ -79,6 +79,28 @@ void reports_scanned_line_number()
     assert(threw);
 }
 
+void reports_structured_assembly_error_line()
+{
+    const sim::Assembler assembler;
+    bool threw = false;
+
+    try {
+        const auto program = assembler.assemble(R"(
+            MOV R1, 1
+            BOGUS
+        )");
+        (void)program;
+    } catch (const sim::AssemblyError& error) {
+        threw = true;
+        const std::string message = error.what();
+        assert(error.line() == 3);
+        assert(contains(message, "line 3"));
+        assert(contains(message, "unknown instruction 'BOGUS'"));
+    }
+
+    assert(threw);
+}
+
 void tokenizes_whitespace_and_commas()
 {
     const sim::Assembler assembler;
@@ -367,6 +389,26 @@ void rejects_unknown_labels()
     assert(threw);
 }
 
+void reports_unknown_label_as_assembly_error()
+{
+    const sim::Assembler assembler;
+    bool threw = false;
+
+    try {
+        const auto program = assembler.assemble(R"(
+            JMP missing
+        )");
+        (void)program;
+    } catch (const sim::AssemblyError& error) {
+        threw = true;
+        const std::string message = error.what();
+        assert(error.line() == 2);
+        assert(contains(message, "unknown label 'missing'"));
+    }
+
+    assert(threw);
+}
+
 void runs_assembled_loop_with_label()
 {
     const sim::Assembler assembler;
@@ -431,6 +473,7 @@ int main()
     ignores_blank_and_comment_lines();
     assembles_no_operand_instruction();
     reports_scanned_line_number();
+    reports_structured_assembly_error_line();
     tokenizes_whitespace_and_commas();
     tokenizes_adjacent_comma_operands();
     parses_valid_registers_and_numbers();
@@ -447,6 +490,7 @@ int main()
     rejects_label_and_instruction_on_same_line();
     resolves_jump_labels_to_byte_addresses();
     rejects_unknown_labels();
+    reports_unknown_label_as_assembly_error();
     runs_assembled_loop_with_label();
     runs_assembled_recursive_program_with_labels();
 }
