@@ -1,59 +1,85 @@
+#include "assembler/Assembler.hpp"
 #include "cpu/CPU.hpp"
 #include "isa/Instruction.hpp"
-#include "memory/Memory.hpp"
 
-#include <array>
-#include <cstdint>
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+namespace {
+
+std::string readTextFile(const std::filesystem::path& path)
+{
+    std::ifstream input(path);
+    if (!input) {
+        throw std::runtime_error("failed to open " + path.string());
+    }
+
+    std::ostringstream contents;
+    contents << input.rdbuf();
+    return contents.str();
+}
+
+std::vector<std::filesystem::path> examplePrograms()
+{
+    std::vector<std::filesystem::path> paths;
+    const std::filesystem::path examplesDir{"examples"};
+
+    for (const auto& entry : std::filesystem::directory_iterator(examplesDir)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".asm") {
+            paths.push_back(entry.path());
+        }
+    }
+
+    std::sort(paths.begin(), paths.end());
+    return paths;
+}
+
+void printCpuState(const sim::CPU& cpu)
+{
+    std::cout << "  halted = " << cpu.halted() << '\n';
+    for (auto index = 0; index < static_cast<int>(sim::CPU::register_count); ++index) {
+        const auto reg = static_cast<sim::Register>(index);
+        std::cout << "  R" << index << " = " << cpu.reg(reg) << '\n';
+    }
+    std::cout << "  ZF = " << cpu.zeroFlag() << '\n';
+    std::cout << "  SF = " << cpu.signFlag() << '\n';
+    std::cout << "  PC = 0x" << std::hex << cpu.pc() << '\n';
+    std::cout << "  SP = 0x" << cpu.sp() << std::dec << '\n';
+}
+
+}
 
 int main()
 {
-    constexpr auto loopAddress = static_cast<std::uint16_t>(3 * sim::Memory::instruction_size);
-    const std::array milestone2Program{
-        sim::makeMov(sim::Register::R1, 3),
-        sim::makeMov(sim::Register::R2, 0),
-        sim::makeMov(sim::Register::R3, 1),
-        sim::makeAdd(sim::Register::R2, sim::Register::R1),
-        sim::makeSub(sim::Register::R1, sim::Register::R3),
-        sim::makeCmp(sim::Register::R1, sim::Register::R0),
-        sim::makeJg(loopAddress),
-        sim::makeHalt(),
-    };
+    const sim::Assembler assembler;
+    const auto paths = examplePrograms();
 
-    sim::CPU cpu;
-    cpu.loadProgram(milestone2Program);
-    cpu.run();
+    if (paths.empty()) {
+        std::cout << "No .asm examples found.\n";
+        return 0;
+    }
 
-    std::cout << "Milestone 2 demo: sum 3 + 2 + 1\n";
-    std::cout << "R1 = " << cpu.reg(sim::Register::R1) << '\n';
-    std::cout << "R2 = " << cpu.reg(sim::Register::R2) << '\n';
-    std::cout << "ZF = " << cpu.zeroFlag() << '\n';
-    std::cout << "SF = " << cpu.signFlag() << '\n';
+    for (const auto& path : paths) {
+        std::cout << path.string() << '\n';
 
-    constexpr auto recursiveAddress = static_cast<std::uint16_t>(3 * sim::Memory::instruction_size);
-    constexpr auto returnAddress = static_cast<std::uint16_t>(11 * sim::Memory::instruction_size);
-    const std::array milestone3Program{
-        sim::makeMov(sim::Register::R1, 3),
-        sim::makeCall(recursiveAddress),
-        sim::makeHalt(),
-        sim::makeCmp(sim::Register::R1, sim::Register::R0),
-        sim::makeJe(returnAddress),
-        sim::makePush(sim::Register::R1),
-        sim::makeMov(sim::Register::R2, 1),
-        sim::makeSub(sim::Register::R1, sim::Register::R2),
-        sim::makeCall(recursiveAddress),
-        sim::makePop(sim::Register::R2),
-        sim::makeAdd(sim::Register::R3, sim::Register::R2),
-        sim::makeRet(),
-    };
+        try {
+            const auto source = readTextFile(path);
+            const auto program = assembler.assemble(source);
 
-    cpu.reset();
-    cpu.loadProgram(milestone3Program);
-    cpu.run();
+            sim::CPU cpu;
+            cpu.loadProgram(program);
+            cpu.run();
+            printCpuState(cpu);
+        } catch (const std::exception& error) {
+            std::cout << "  error: " << error.what() << '\n';
+        }
 
-    std::cout << "\nMilestone 3 demo: recursive sum 3 + 2 + 1\n";
-    std::cout << "R1 = " << cpu.reg(sim::Register::R1) << '\n';
-    std::cout << "R2 = " << cpu.reg(sim::Register::R2) << '\n';
-    std::cout << "R3 = " << cpu.reg(sim::Register::R3) << '\n';
-    std::cout << "SP = 0x" << std::hex << cpu.sp() << std::dec << '\n';
+        std::cout << '\n';
+    }
 }
