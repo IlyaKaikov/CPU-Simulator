@@ -5,9 +5,9 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <vector>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 bool contains(const std::string& text, const std::string& expected)
 {
@@ -36,6 +36,21 @@ void reports_binary_format_errors()
     } catch (const std::runtime_error& error) {
         threw = true;
         assert(contains(error.what(), "bad binary"));
+    }
+
+    assert(threw);
+}
+
+void expectBinaryFormatError(const std::vector<std::uint8_t>& bytes, const std::string& expected)
+{
+    bool threw = false;
+
+    try {
+        const auto program = sim::readProgramBinary(bytes);
+        (void)program;
+    } catch (const sim::BinaryFormatError& error) {
+        threw = true;
+        assert(contains(error.what(), expected));
     }
 
     assert(threw);
@@ -99,10 +114,95 @@ void writes_instruction_body_after_header()
     assert(bytes.at(offset + 3) == 0x00);
 }
 
+void reads_empty_program()
+{
+    const auto bytes = sim::writeProgramBinary(std::vector<sim::EncodedInstruction>{});
+    const auto program = sim::readProgramBinary(bytes);
+
+    assert(program.empty());
+}
+
+void reads_instruction_body()
+{
+    const std::vector<sim::EncodedInstruction> expected{
+        sim::makeMov(sim::Register::R1, -5),
+        sim::makeLoad(sim::Register::R2, 0x8000),
+        sim::makeHalt(),
+    };
+
+    const auto bytes = sim::writeProgramBinary(expected);
+    const auto actual = sim::readProgramBinary(bytes);
+
+    assert(actual.size() == expected.size());
+    for (std::size_t index = 0; index < expected.size(); ++index) {
+        assert(actual.at(index).opcode == expected.at(index).opcode);
+        assert(actual.at(index).a == expected.at(index).a);
+        assert(actual.at(index).b == expected.at(index).b);
+    }
+}
+
+void rejects_short_header()
+{
+    expectBinaryFormatError({'C', 'S', 'I'}, "shorter than the header");
+}
+
+void rejects_bad_magic()
+{
+    auto bytes = sim::writeProgramBinary(std::vector<sim::EncodedInstruction>{});
+    bytes.at(0) = static_cast<std::uint8_t>('X');
+
+    expectBinaryFormatError(bytes, "invalid binary magic");
+}
+
+void rejects_unsupported_version()
+{
+    auto bytes = sim::writeProgramBinary(std::vector<sim::EncodedInstruction>{});
+    bytes.at(4) = 0x02;
+
+    expectBinaryFormatError(bytes, "unsupported binary version");
+}
+
+void rejects_unsupported_header_size()
+{
+    auto bytes = sim::writeProgramBinary(std::vector<sim::EncodedInstruction>{});
+    bytes.at(6) = 0x14;
+
+    expectBinaryFormatError(bytes, "unsupported binary header size");
+}
+
+void rejects_unsupported_entry_point()
+{
+    auto bytes = sim::writeProgramBinary(std::vector<sim::EncodedInstruction>{});
+    bytes.at(12) = 0x04;
+
+    expectBinaryFormatError(bytes, "unsupported binary entry point");
+}
+
+void rejects_body_size_mismatch()
+{
+    auto bytes = sim::writeProgramBinary(std::vector<sim::EncodedInstruction>{sim::makeHalt()});
+    bytes.pop_back();
+
+    expectBinaryFormatError(bytes, "binary size does not match instruction count");
+
+    bytes = sim::writeProgramBinary(std::vector<sim::EncodedInstruction>{});
+    bytes.push_back(0x00);
+
+    expectBinaryFormatError(bytes, "binary size does not match instruction count");
+}
+
 int main()
 {
     exposes_binary_format_constants();
     reports_binary_format_errors();
     writes_empty_program_header();
     writes_instruction_body_after_header();
+    reads_empty_program();
+    reads_instruction_body();
+    rejects_short_header();
+    rejects_bad_magic();
+    rejects_unsupported_version();
+    rejects_unsupported_header_size();
+    rejects_unsupported_entry_point();
+    rejects_body_size_mismatch();
 }

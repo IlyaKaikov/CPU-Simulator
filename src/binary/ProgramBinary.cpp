@@ -1,5 +1,6 @@
 #include "binary/ProgramBinary.hpp"
 
+#include <algorithm>
 #include <limits>
 
 namespace sim {
@@ -25,6 +26,31 @@ void appendInstruction(std::vector<std::uint8_t>& bytes, const EncodedInstructio
     bytes.push_back(instruction.opcode);
     bytes.push_back(instruction.a);
     appendUInt16(bytes, static_cast<std::uint16_t>(instruction.b));
+}
+
+std::uint16_t readUInt16(std::span<const std::uint8_t> bytes, std::size_t offset)
+{
+    const auto low = static_cast<std::uint16_t>(bytes[offset]);
+    const auto high = static_cast<std::uint16_t>(bytes[offset + 1]) << 8U;
+    return static_cast<std::uint16_t>(low | high);
+}
+
+std::uint32_t readUInt32(std::span<const std::uint8_t> bytes, std::size_t offset)
+{
+    const auto byte0 = static_cast<std::uint32_t>(bytes[offset]);
+    const auto byte1 = static_cast<std::uint32_t>(bytes[offset + 1]) << 8U;
+    const auto byte2 = static_cast<std::uint32_t>(bytes[offset + 2]) << 16U;
+    const auto byte3 = static_cast<std::uint32_t>(bytes[offset + 3]) << 24U;
+    return byte0 | byte1 | byte2 | byte3;
+}
+
+EncodedInstruction readInstruction(std::span<const std::uint8_t> bytes, std::size_t offset)
+{
+    return EncodedInstruction{
+        bytes[offset],
+        bytes[offset + 1],
+        static_cast<std::int16_t>(readUInt16(bytes, offset + 2)),
+    };
 }
 
 }
@@ -58,8 +84,46 @@ std::vector<std::uint8_t> writeProgramBinary(std::span<const EncodedInstruction>
 
 std::vector<EncodedInstruction> readProgramBinary(std::span<const std::uint8_t> bytes)
 {
-    (void)bytes;
-    throw BinaryFormatError("binary reader is not implemented yet");
+    if (bytes.size() < program_binary::header_size) {
+        throw BinaryFormatError("binary is shorter than the header");
+    }
+
+    if (!std::equal(program_binary::magic.begin(), program_binary::magic.end(), bytes.begin())) {
+        throw BinaryFormatError("invalid binary magic");
+    }
+
+    const auto version = readUInt16(bytes, 4);
+    if (version != program_binary::version) {
+        throw BinaryFormatError("unsupported binary version");
+    }
+
+    const auto headerSize = readUInt16(bytes, 6);
+    if (headerSize != program_binary::header_size) {
+        throw BinaryFormatError("unsupported binary header size");
+    }
+
+    const auto instructionCount = readUInt32(bytes, 8);
+    const auto entryPoint = readUInt32(bytes, 12);
+    if (entryPoint != 0) {
+        throw BinaryFormatError("unsupported binary entry point");
+    }
+
+    const auto expectedSize = program_binary::header_size +
+        static_cast<std::size_t>(instructionCount) * program_binary::instruction_size;
+    if (bytes.size() != expectedSize) {
+        throw BinaryFormatError("binary size does not match instruction count");
+    }
+
+    std::vector<EncodedInstruction> program;
+    program.reserve(instructionCount);
+
+    auto offset = program_binary::header_size;
+    for (std::uint32_t index = 0; index < instructionCount; ++index) {
+        program.push_back(readInstruction(bytes, offset));
+        offset += program_binary::instruction_size;
+    }
+
+    return program;
 }
 
 }
