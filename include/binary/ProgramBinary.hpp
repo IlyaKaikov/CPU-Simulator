@@ -6,6 +6,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -29,5 +30,7 @@ inline constexpr std::size_t instruction_size = Memory::instruction_size;
 
 [[nodiscard]] std::vector<std::uint8_t> writeProgramBinary(std::span<const EncodedInstruction> program);
 [[nodiscard]] std::vector<EncodedInstruction> readProgramBinary(std::span<const std::uint8_t> bytes);
+void writeProgramBinaryFile(const std::filesystem::path& path, std::span<const EncodedInstruction> program);
+[[nodiscard]] std::vector<EncodedInstruction> readProgramBinaryFile(const std::filesystem::path& path);
 
 }

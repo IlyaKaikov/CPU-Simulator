@@ -1,6 +1,7 @@
 #include "binary/ProgramBinary.hpp"
 
 #include <algorithm>
+#include <fstream>
 #include <limits>
 
 namespace sim {
@@ -124,6 +125,41 @@ std::vector<EncodedInstruction> readProgramBinary(std::span<const std::uint8_t> 
     }
 
     return program;
+}
+
+void writeProgramBinaryFile(const std::filesystem::path& path, std::span<const EncodedInstruction> program)
+{
+    const auto bytes = writeProgramBinary(program);
+
+    std::ofstream output(path, std::ios::binary);
+    if (!output) {
+        throw BinaryFormatError("failed to open binary file for writing: " + path.string());
+    }
+
+    output.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+    if (!output) {
+        throw BinaryFormatError("failed to write binary file: " + path.string());
+    }
+}
+
+std::vector<EncodedInstruction> readProgramBinaryFile(const std::filesystem::path& path)
+{
+    std::ifstream input(path, std::ios::binary);
+    if (!input) {
+        throw BinaryFormatError("failed to open binary file for reading: " + path.string());
+    }
+
+    std::vector<std::uint8_t> bytes;
+    char byte = 0;
+    while (input.get(byte)) {
+        bytes.push_back(static_cast<std::uint8_t>(static_cast<unsigned char>(byte)));
+    }
+
+    if (!input.eof()) {
+        throw BinaryFormatError("failed to read binary file: " + path.string());
+    }
+
+    return readProgramBinary(bytes);
 }
 
 }

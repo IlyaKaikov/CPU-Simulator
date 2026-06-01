@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -54,6 +55,21 @@ void expectBinaryFormatError(const std::vector<std::uint8_t>& bytes, const std::
     }
 
     assert(threw);
+}
+
+bool sameInstruction(const sim::EncodedInstruction& left, const sim::EncodedInstruction& right)
+{
+    return left.opcode == right.opcode && left.a == right.a && left.b == right.b;
+}
+
+void assertProgramEquals(
+    const std::vector<sim::EncodedInstruction>& actual,
+    const std::vector<sim::EncodedInstruction>& expected)
+{
+    assert(actual.size() == expected.size());
+    for (std::size_t index = 0; index < expected.size(); ++index) {
+        assert(sameInstruction(actual.at(index), expected.at(index)));
+    }
 }
 
 void writes_empty_program_header()
@@ -133,12 +149,7 @@ void reads_instruction_body()
     const auto bytes = sim::writeProgramBinary(expected);
     const auto actual = sim::readProgramBinary(bytes);
 
-    assert(actual.size() == expected.size());
-    for (std::size_t index = 0; index < expected.size(); ++index) {
-        assert(actual.at(index).opcode == expected.at(index).opcode);
-        assert(actual.at(index).a == expected.at(index).a);
-        assert(actual.at(index).b == expected.at(index).b);
-    }
+    assertProgramEquals(actual, expected);
 }
 
 void rejects_short_header()
@@ -191,6 +202,42 @@ void rejects_body_size_mismatch()
     expectBinaryFormatError(bytes, "binary size does not match instruction count");
 }
 
+void writes_and_reads_binary_file()
+{
+    const auto path = std::filesystem::temp_directory_path() / "cpu_sim_milestone5_roundtrip.bin";
+    std::filesystem::remove(path);
+
+    const std::vector<sim::EncodedInstruction> expected{
+        sim::makeMov(sim::Register::R1, 42),
+        sim::makeCall(3 * sim::Memory::instruction_size),
+        sim::makeHalt(),
+        sim::makeRet(),
+    };
+
+    sim::writeProgramBinaryFile(path, expected);
+    const auto actual = sim::readProgramBinaryFile(path);
+
+    assertProgramEquals(actual, expected);
+    std::filesystem::remove(path);
+}
+
+void reports_missing_binary_file()
+{
+    bool threw = false;
+    const auto path = std::filesystem::temp_directory_path() / "cpu_sim_milestone5_missing.bin";
+    std::filesystem::remove(path);
+
+    try {
+        const auto program = sim::readProgramBinaryFile(path);
+        (void)program;
+    } catch (const sim::BinaryFormatError& error) {
+        threw = true;
+        assert(contains(error.what(), "failed to open binary file for reading"));
+    }
+
+    assert(threw);
+}
+
 int main()
 {
     exposes_binary_format_constants();
@@ -205,4 +252,6 @@ int main()
     rejects_unsupported_header_size();
     rejects_unsupported_entry_point();
     rejects_body_size_mismatch();
+    writes_and_reads_binary_file();
+    reports_missing_binary_file();
 }
