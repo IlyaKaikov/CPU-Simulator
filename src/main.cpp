@@ -1,4 +1,5 @@
 #include "assembler/Assembler.hpp"
+#include "binary/ProgramBinary.hpp"
 #include "cpu/CPU.hpp"
 #include "isa/Instruction.hpp"
 
@@ -53,9 +54,23 @@ void printCpuState(const sim::CPU& cpu)
     std::cout << "  SP = 0x" << cpu.sp() << std::dec << '\n';
 }
 
+void runProgram(const std::vector<sim::EncodedInstruction>& program)
+{
+    sim::CPU cpu;
+    cpu.loadProgram(program);
+    cpu.run();
+    printCpuState(cpu);
 }
 
-int main()
+void printUsage(const char* executable)
+{
+    std::cerr << "Usage:\n";
+    std::cerr << "  " << executable << '\n';
+    std::cerr << "  " << executable << " assemble <input.asm> <output.bin>\n";
+    std::cerr << "  " << executable << " run <input.bin>\n";
+}
+
+int runExamples()
 {
     const sim::Assembler assembler;
     const auto paths = examplePrograms();
@@ -71,15 +86,56 @@ int main()
         try {
             const auto source = readTextFile(path);
             const auto program = assembler.assemble(source);
-
-            sim::CPU cpu;
-            cpu.loadProgram(program);
-            cpu.run();
-            printCpuState(cpu);
+            runProgram(program);
         } catch (const std::exception& error) {
             std::cout << "  error: " << error.what() << '\n';
         }
 
         std::cout << '\n';
+    }
+
+    return 0;
+}
+
+int assembleBinary(const std::filesystem::path& sourcePath, const std::filesystem::path& binaryPath)
+{
+    const sim::Assembler assembler;
+    const auto source = readTextFile(sourcePath);
+    const auto program = assembler.assemble(source);
+
+    sim::writeProgramBinaryFile(binaryPath, program);
+    std::cout << "Assembled " << sourcePath.string() << " -> " << binaryPath.string() << '\n';
+    return 0;
+}
+
+int runBinary(const std::filesystem::path& binaryPath)
+{
+    const auto program = sim::readProgramBinaryFile(binaryPath);
+    runProgram(program);
+    return 0;
+}
+
+}
+
+int main(int argc, char* argv[])
+{
+    try {
+        if (argc == 1) {
+            return runExamples();
+        }
+
+        const std::string command = argv[1];
+        if (command == "assemble" && argc == 4) {
+            return assembleBinary(argv[2], argv[3]);
+        }
+        if (command == "run" && argc == 3) {
+            return runBinary(argv[2]);
+        }
+
+        printUsage(argv[0]);
+        return 2;
+    } catch (const std::exception& error) {
+        std::cerr << "error: " << error.what() << '\n';
+        return 1;
     }
 }

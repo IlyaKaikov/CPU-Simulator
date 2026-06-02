@@ -7,6 +7,7 @@ Build a simplified RISC-style CPU simulator in C++20 demonstrating:
 - branching and control flow
 - stack/function calls
 - assembler + debugger tooling
+- binary program files
 - modular systems-oriented design
 
 ## Target Scope
@@ -29,5 +30,6 @@ A realistic 4–6 week project suitable for:
 - Fetch → Decode → Execute loop
 - Fixed-width instruction encoding
 - Labels + assembler parsing
+- Binary writer + loader
 - Breakpoints + stepping debugger
 - Function calls + stack support

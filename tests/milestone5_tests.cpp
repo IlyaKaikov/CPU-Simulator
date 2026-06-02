@@ -1,4 +1,6 @@
+#include "assembler/Assembler.hpp"
 #include "binary/ProgramBinary.hpp"
+#include "cpu/CPU.hpp"
 #include "isa/Instruction.hpp"
 #include "memory/Memory.hpp"
 
@@ -238,6 +240,89 @@ void reports_missing_binary_file()
     assert(threw);
 }
 
+void assembles_source_to_binary_file_artifact()
+{
+    const auto path = std::filesystem::temp_directory_path() / "cpu_sim_milestone5_assemble_artifact.bin";
+    std::filesystem::remove(path);
+
+    const sim::Assembler assembler;
+    const auto program = assembler.assemble(R"(
+        MOV R1, 5
+        MOV R2, 7
+        ADD R1, R2
+        HALT
+    )");
+
+    sim::writeProgramBinaryFile(path, program);
+    const auto loadedProgram = sim::readProgramBinaryFile(path);
+
+    assertProgramEquals(
+        loadedProgram,
+        {
+            sim::makeMov(sim::Register::R1, 5),
+            sim::makeMov(sim::Register::R2, 7),
+            sim::makeAdd(sim::Register::R1, sim::Register::R2),
+            sim::makeHalt(),
+        });
+
+    std::filesystem::remove(path);
+}
+
+void runs_binary_program_loaded_into_cpu()
+{
+    const std::vector<sim::EncodedInstruction> sourceProgram{
+        sim::makeMov(sim::Register::R1, 5),
+        sim::makeMov(sim::Register::R2, 7),
+        sim::makeAdd(sim::Register::R1, sim::Register::R2),
+        sim::makeHalt(),
+    };
+
+    const auto bytes = sim::writeProgramBinary(sourceProgram);
+    const auto loadedProgram = sim::readProgramBinary(bytes);
+
+    sim::CPU cpu;
+    cpu.loadProgram(loadedProgram);
+    cpu.run();
+
+    assert(cpu.halted());
+    assert(cpu.reg(sim::Register::R1) == 12);
+    assert(cpu.reg(sim::Register::R2) == 7);
+}
+
+void runs_assembled_binary_file_loaded_into_cpu()
+{
+    const auto path = std::filesystem::temp_directory_path() / "cpu_sim_milestone5_assembled_run.bin";
+    std::filesystem::remove(path);
+
+    const sim::Assembler assembler;
+    const auto assembledProgram = assembler.assemble(R"(
+        MOV R1, 3
+        MOV R2, 0
+        MOV R3, 1
+        loop:
+        ADD R2, R1
+        SUB R1, R3
+        CMP R1, R0
+        JG loop
+        HALT
+    )");
+
+    sim::writeProgramBinaryFile(path, assembledProgram);
+    const auto loadedProgram = sim::readProgramBinaryFile(path);
+
+    sim::CPU cpu;
+    cpu.loadProgram(loadedProgram);
+    cpu.run();
+
+    assert(cpu.halted());
+    assert(cpu.reg(sim::Register::R1) == 0);
+    assert(cpu.reg(sim::Register::R2) == 6);
+    assert(cpu.zeroFlag());
+    assert(!cpu.signFlag());
+
+    std::filesystem::remove(path);
+}
+
 int main()
 {
     exposes_binary_format_constants();
@@ -254,4 +339,7 @@ int main()
     rejects_body_size_mismatch();
     writes_and_reads_binary_file();
     reports_missing_binary_file();
+    assembles_source_to_binary_file_artifact();
+    runs_binary_program_loaded_into_cpu();
+    runs_assembled_binary_file_loaded_into_cpu();
 }

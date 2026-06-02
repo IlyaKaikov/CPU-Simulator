@@ -1,8 +1,6 @@
 # Example Programs
 
-These assembly files are small fixtures for manual testing and future assembler tests.
-
-Current executable behavior is still driven from C++ helper functions. Label-based examples, such as loops and jumps, are intended to become assembler inputs once label resolution exists.
+These assembly files are small fixtures for manual testing and assembler/binary-loader workflows.
 
 Implemented milestone examples:
 - `milestone1.asm`
@@ -12,7 +10,14 @@ Implemented milestone examples:
 - `milestone2_jmp_skip.asm`
 - `milestone2_loop_sum.asm`
 - `milestone2_countdown.asm`
-
-Future milestone previews:
 - `milestone3_memory_preview.asm`
+- `milestone3_push_preview.asm`
 - `milestone3_stack_preview.asm`
+- `milestone5_binary_roundtrip.asm`
+
+The milestone 5 fixture can be assembled and run as a binary program:
+
+```powershell
+.\build-mingw\cpu_sim.exe assemble examples\milestone5_binary_roundtrip.asm build-mingw\milestone5_binary_roundtrip.bin
+.\build-mingw\cpu_sim.exe run build-mingw\milestone5_binary_roundtrip.bin
+```

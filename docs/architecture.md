@@ -6,8 +6,8 @@ cpu/
 memory/
 isa/
 assembler/
+binary/
 debugger/
-loader/
 tests/
 examples/
 ```
@@ -50,6 +50,12 @@ Responsibilities:
 - parse assembly
 - resolve labels
 - encode instructions
+
+### Binary Program Format
+Responsibilities:
+- write assembled programs to versioned binary files
+- validate binary headers
+- load binary files back into `EncodedInstruction` programs
 
 ### Debugger
 Responsibilities:

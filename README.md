@@ -10,6 +10,7 @@ The simulator currently supports:
 - memory words as signed 32-bit little-endian values
 - downward-growing stack
 - assembler input from `.asm` text
+- versioned binary program files
 
 ## Implemented ISA
 
@@ -35,6 +36,8 @@ HALT
 ```
 
 The assembler supports comments, blank lines, decimal numbers, hex numbers, labels, and line-numbered `AssemblyError` diagnostics.
+
+Binary programs use a `CSIM` magic header, version `1`, and the same fixed-width 4-byte instruction layout used by simulated memory. See [docs/binary_format.md](docs/binary_format.md).
 
 Example:
 
@@ -102,6 +105,20 @@ examples\milestone1.asm
   SP = 0x10000
 ```
 
+## Binary CLI
+
+Assemble an `.asm` source file into a binary program:
+
+```powershell
+.\build-mingw\cpu_sim.exe assemble examples\milestone5_binary_roundtrip.asm build-mingw\milestone5_binary_roundtrip.bin
+```
+
+Load and run a binary program:
+
+```powershell
+.\build-mingw\cpu_sim.exe run build-mingw\milestone5_binary_roundtrip.bin
+```
+
 ## Tests
 
 Tests are split by milestone:
@@ -110,6 +127,7 @@ Tests are split by milestone:
 milestone2_tests
 milestone3_tests
 milestone4_tests
+milestone5_tests
 ```
 
 Run all tests:
@@ -127,4 +145,5 @@ Current state:
 - Milestone 2: control flow - complete
 - Milestone 3: memory + stack - complete
 - Milestone 4: assembler to `EncodedInstruction` programs - complete
-- Milestone 5 next: binary format + loader
+- Milestone 5: binary format + loader - complete
+- Milestone 6 next: debugger
