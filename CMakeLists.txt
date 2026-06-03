@@ -10,6 +10,7 @@ add_library(cpu_simulator
     src/assembler/Assembler.cpp
     src/binary/ProgramBinary.cpp
     src/cpu/CPU.cpp
+    src/debugger/Debugger.cpp
     src/isa/Instruction.cpp
     src/memory/Memory.cpp
 )
@@ -42,7 +43,11 @@ target_link_libraries(milestone4_tests PRIVATE cpu_simulator)
 add_executable(milestone5_tests tests/milestone5_tests.cpp)
 target_link_libraries(milestone5_tests PRIVATE cpu_simulator)
 
+add_executable(milestone6_tests tests/milestone6_tests.cpp)
+target_link_libraries(milestone6_tests PRIVATE cpu_simulator)
+
 add_test(NAME milestone2_tests COMMAND milestone2_tests)
 add_test(NAME milestone3_tests COMMAND milestone3_tests)
 add_test(NAME milestone4_tests COMMAND milestone4_tests)
 add_test(NAME milestone5_tests COMMAND milestone5_tests)
+add_test(NAME milestone6_tests COMMAND milestone6_tests)
