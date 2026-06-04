@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <unordered_set>
 
 namespace sim {
@@ -34,6 +35,9 @@ public:
     void removeBreakpoint(std::uint32_t address);
     void clearBreakpoints();
     [[nodiscard]] bool hasBreakpoint(std::uint32_t address) const;
+
+    [[nodiscard]] std::string dumpRegisters() const;
+    [[nodiscard]] std::string dumpMemory(std::uint32_t startAddress, std::size_t byteCount) const;
 
 private:
     CPU& cpu_;

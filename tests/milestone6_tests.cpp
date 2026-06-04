@@ -5,7 +5,14 @@
 
 #include <cassert>
 #include <cstdint>
+#include <stdexcept>
+#include <string>
 #include <vector>
+
+bool contains(const std::string& text, const std::string& expected)
+{
+    return text.find(expected) != std::string::npos;
+}
 
 bool sameInstruction(const sim::EncodedInstruction& left, const sim::EncodedInstruction& right)
 {
@@ -245,6 +252,101 @@ void removing_breakpoint_allows_continue_execution()
     assert(cpu.reg(sim::Register::R2) == 7);
 }
 
+void register_dump_includes_all_registers_and_state()
+{
+    sim::CPU cpu;
+    sim::Debugger debugger(cpu);
+
+    const auto dump = debugger.dumpRegisters();
+
+    assert(contains(dump, "halted = 0"));
+    assert(contains(dump, "R0 = 0"));
+    assert(contains(dump, "R1 = 0"));
+    assert(contains(dump, "R2 = 0"));
+    assert(contains(dump, "R3 = 0"));
+    assert(contains(dump, "R4 = 0"));
+    assert(contains(dump, "R5 = 0"));
+    assert(contains(dump, "R6 = 0"));
+    assert(contains(dump, "R7 = 0"));
+    assert(contains(dump, "ZF = 0"));
+    assert(contains(dump, "SF = 0"));
+    assert(contains(dump, "PC = 0x0"));
+    assert(contains(dump, "SP = 0x10000"));
+}
+
+void register_dump_reflects_current_cpu_state()
+{
+    const std::vector<sim::EncodedInstruction> program{
+        sim::makeMov(sim::Register::R1, 5),
+        sim::makeMov(sim::Register::R2, 7),
+        sim::makeCmp(sim::Register::R1, sim::Register::R2),
+        sim::makeHalt(),
+    };
+
+    sim::CPU cpu;
+    cpu.loadProgram(program);
+    sim::Debugger debugger(cpu);
+    const auto result = debugger.continueExecution(3);
+
+    const auto dump = debugger.dumpRegisters();
+
+    assert(result.reason == sim::DebugStopReason::MaxStepsExceeded);
+    assert(contains(dump, "halted = 0"));
+    assert(contains(dump, "R1 = 5"));
+    assert(contains(dump, "R2 = 7"));
+    assert(contains(dump, "ZF = 0"));
+    assert(contains(dump, "SF = 1"));
+    assert(contains(dump, "PC = 0xc"));
+    assert(contains(dump, "SP = 0x10000"));
+}
+
+void memory_dump_includes_little_endian_bytes()
+{
+    const std::vector<sim::EncodedInstruction> program{
+        sim::makeMov(sim::Register::R1, 0x1234),
+        sim::makeStore(sim::Register::R1, 0x8000),
+        sim::makeHalt(),
+    };
+
+    sim::CPU cpu;
+    cpu.loadProgram(program);
+    sim::Debugger debugger(cpu);
+    const auto result = debugger.continueExecution();
+
+    const auto dump = debugger.dumpMemory(0x8000, 4);
+
+    assert(result.reason == sim::DebugStopReason::Halted);
+    assert(contains(dump, "0x8000: 34 12 00 00"));
+}
+
+void memory_dump_wraps_after_sixteen_bytes()
+{
+    sim::CPU cpu;
+    sim::Debugger debugger(cpu);
+
+    const auto dump = debugger.dumpMemory(0, 17);
+
+    assert(contains(dump, "0x0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"));
+    assert(contains(dump, "0x10: 00"));
+}
+
+void memory_dump_rejects_out_of_range_requests()
+{
+    sim::CPU cpu;
+    sim::Debugger debugger(cpu);
+    bool threw = false;
+
+    try {
+        const auto dump = debugger.dumpMemory(sim::Memory::size - 1, 2);
+        (void)dump;
+    } catch (const std::out_of_range& error) {
+        threw = true;
+        assert(contains(error.what(), "memory access out of range"));
+    }
+
+    assert(threw);
+}
+
 int main()
 {
     step_executes_one_instruction();
@@ -257,4 +359,9 @@ int main()
     continue_execution_stops_before_breakpoint();
     breakpoint_stop_is_repeatable_until_stepped_or_removed();
     removing_breakpoint_allows_continue_execution();
+    register_dump_includes_all_registers_and_state();
+    register_dump_reflects_current_cpu_state();
+    memory_dump_includes_little_endian_bytes();
+    memory_dump_wraps_after_sixteen_bytes();
+    memory_dump_rejects_out_of_range_requests();
 }

@@ -1,5 +1,8 @@
 #include "debugger/Debugger.hpp"
 
+#include <iomanip>
+#include <sstream>
+
 namespace sim {
 
 Debugger::Debugger(CPU& cpu)
@@ -89,6 +92,46 @@ void Debugger::clearBreakpoints()
 bool Debugger::hasBreakpoint(std::uint32_t address) const
 {
     return breakpoints_.contains(address);
+}
+
+std::string Debugger::dumpRegisters() const
+{
+    std::ostringstream output;
+
+    output << "halted = " << cpu_.halted() << '\n';
+    for (auto index = 0; index < static_cast<int>(CPU::register_count); ++index) {
+        const auto reg = static_cast<Register>(index);
+        output << "R" << index << " = " << cpu_.reg(reg) << '\n';
+    }
+    output << "ZF = " << cpu_.zeroFlag() << '\n';
+    output << "SF = " << cpu_.signFlag() << '\n';
+    output << "PC = 0x" << std::hex << cpu_.pc() << '\n';
+    output << "SP = 0x" << cpu_.sp() << std::dec << '\n';
+
+    return output.str();
+}
+
+std::string Debugger::dumpMemory(std::uint32_t startAddress, std::size_t byteCount) const
+{
+    std::ostringstream output;
+
+    for (std::size_t offset = 0; offset < byteCount; ++offset) {
+        if (offset % 16 == 0) {
+            if (offset != 0) {
+                output << '\n';
+            }
+            output << "0x" << std::hex << (startAddress + offset) << ":";
+        }
+
+        const auto byte = cpu_.memory().readByte(startAddress + static_cast<std::uint32_t>(offset));
+        output << ' ' << std::setw(2) << std::setfill('0') << std::hex << static_cast<int>(byte);
+    }
+
+    if (byteCount != 0) {
+        output << '\n';
+    }
+
+    return output.str();
 }
 
 }
