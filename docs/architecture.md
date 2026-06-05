@@ -60,6 +60,8 @@ Responsibilities:
 ### Debugger
 Responsibilities:
 - stepping
+- continuing until halt, breakpoint, or step budget
 - breakpoints
 - memory/register inspection
 - execution tracing
+- deterministic CLI debug output for binary programs

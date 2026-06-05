@@ -32,4 +32,5 @@ A realistic 4–6 week project suitable for:
 - Labels + assembler parsing
 - Binary writer + loader
 - Breakpoints + stepping debugger
+- Register/memory dumps + execution tracing
 - Function calls + stack support

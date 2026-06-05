@@ -11,6 +11,7 @@ The simulator currently supports:
 - downward-growing stack
 - assembler input from `.asm` text
 - versioned binary program files
+- debugger stepping, breakpoints, dumps, and execution tracing
 
 ## Implemented ISA
 
@@ -119,6 +120,17 @@ Load and run a binary program:
 .\build-mingw\cpu_sim.exe run build-mingw\milestone5_binary_roundtrip.bin
 ```
 
+## Debugger CLI
+
+Run a binary program through the debugger and print the final register dump plus execution trace:
+
+```powershell
+.\build-mingw\cpu_sim.exe assemble examples\milestone6_debug_trace.asm build-mingw\milestone6_debug_trace.bin
+.\build-mingw\cpu_sim.exe debug build-mingw\milestone6_debug_trace.bin
+```
+
+The debugger module also supports single-step execution, continue, breakpoints, register dumps, memory dumps, and opt-in trace collection from C++ tests/code.
+
 ## Tests
 
 Tests are split by milestone:
@@ -128,6 +140,7 @@ milestone2_tests
 milestone3_tests
 milestone4_tests
 milestone5_tests
+milestone6_tests
 ```
 
 Run all tests:
@@ -146,4 +159,5 @@ Current state:
 - Milestone 3: memory + stack - complete
 - Milestone 4: assembler to `EncodedInstruction` programs - complete
 - Milestone 5: binary format + loader - complete
-- Milestone 6 next: debugger
+- Milestone 6: debugger - complete
+- Milestone 7 next: polish

@@ -14,10 +14,18 @@ Implemented milestone examples:
 - `milestone3_push_preview.asm`
 - `milestone3_stack_preview.asm`
 - `milestone5_binary_roundtrip.asm`
+- `milestone6_debug_trace.asm`
 
 The milestone 5 fixture can be assembled and run as a binary program:
 
 ```powershell
 .\build-mingw\cpu_sim.exe assemble examples\milestone5_binary_roundtrip.asm build-mingw\milestone5_binary_roundtrip.bin
 .\build-mingw\cpu_sim.exe run build-mingw\milestone5_binary_roundtrip.bin
+```
+
+The milestone 6 fixture can be assembled and inspected with debugger tracing:
+
+```powershell
+.\build-mingw\cpu_sim.exe assemble examples\milestone6_debug_trace.asm build-mingw\milestone6_debug_trace.bin
+.\build-mingw\cpu_sim.exe debug build-mingw\milestone6_debug_trace.bin
 ```

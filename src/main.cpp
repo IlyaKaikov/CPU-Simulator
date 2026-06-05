@@ -1,6 +1,7 @@
 #include "assembler/Assembler.hpp"
 #include "binary/ProgramBinary.hpp"
 #include "cpu/CPU.hpp"
+#include "debugger/Debugger.hpp"
 #include "isa/Instruction.hpp"
 
 #include <algorithm>
@@ -62,12 +63,40 @@ void runProgram(const std::vector<sim::EncodedInstruction>& program)
     printCpuState(cpu);
 }
 
+const char* stopReasonName(sim::DebugStopReason reason)
+{
+    switch (reason) {
+    case sim::DebugStopReason::StepComplete:
+        return "step-complete";
+    case sim::DebugStopReason::Breakpoint:
+        return "breakpoint";
+    case sim::DebugStopReason::Halted:
+        return "halted";
+    case sim::DebugStopReason::MaxStepsExceeded:
+        return "max-steps-exceeded";
+    }
+
+    return "unknown";
+}
+
+void printTrace(const std::vector<sim::TraceEntry>& trace)
+{
+    std::cout << "Trace:\n";
+    for (const auto& entry : trace) {
+        std::cout << "  0x" << std::hex << entry.pcBefore << " -> 0x" << entry.pcAfter << std::dec;
+        std::cout << " opcode=0x" << std::hex << static_cast<int>(entry.instruction.opcode) << std::dec;
+        std::cout << " a=" << static_cast<int>(entry.instruction.a);
+        std::cout << " b=" << entry.instruction.b << '\n';
+    }
+}
+
 void printUsage(const char* executable)
 {
     std::cerr << "Usage:\n";
     std::cerr << "  " << executable << '\n';
     std::cerr << "  " << executable << " assemble <input.asm> <output.bin>\n";
     std::cerr << "  " << executable << " run <input.bin>\n";
+    std::cerr << "  " << executable << " debug <input.bin>\n";
 }
 
 int runExamples()
@@ -115,6 +144,24 @@ int runBinary(const std::filesystem::path& binaryPath)
     return 0;
 }
 
+int debugBinary(const std::filesystem::path& binaryPath)
+{
+    const auto program = sim::readProgramBinaryFile(binaryPath);
+
+    sim::CPU cpu;
+    cpu.loadProgram(program);
+
+    sim::Debugger debugger(cpu);
+    debugger.enableTracing(true);
+    const auto result = debugger.continueExecution();
+
+    std::cout << "Stop reason: " << stopReasonName(result.reason) << '\n';
+    std::cout << debugger.dumpRegisters();
+    printTrace(debugger.trace());
+
+    return result.reason == sim::DebugStopReason::MaxStepsExceeded ? 1 : 0;
+}
+
 }
 
 int main(int argc, char* argv[])
@@ -130,6 +177,9 @@ int main(int argc, char* argv[])
         }
         if (command == "run" && argc == 3) {
             return runBinary(argv[2]);
+        }
+        if (command == "debug" && argc == 3) {
+            return debugBinary(argv[2]);
         }
 
         printUsage(argv[0]);
