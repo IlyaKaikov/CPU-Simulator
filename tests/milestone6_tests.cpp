@@ -347,6 +347,148 @@ void memory_dump_rejects_out_of_range_requests()
     assert(threw);
 }
 
+void tracing_is_disabled_by_default()
+{
+    const std::vector<sim::EncodedInstruction> program{
+        sim::makeMov(sim::Register::R1, 5),
+        sim::makeHalt(),
+    };
+
+    sim::CPU cpu;
+    cpu.loadProgram(program);
+    sim::Debugger debugger(cpu);
+
+    const auto result = debugger.continueExecution();
+
+    assert(result.reason == sim::DebugStopReason::Halted);
+    assert(debugger.trace().empty());
+}
+
+void tracing_records_step_execution()
+{
+    const std::vector<sim::EncodedInstruction> program{
+        sim::makeMov(sim::Register::R1, 5),
+        sim::makeHalt(),
+    };
+
+    sim::CPU cpu;
+    cpu.loadProgram(program);
+    sim::Debugger debugger(cpu);
+    debugger.enableTracing(true);
+
+    const auto result = debugger.step();
+    const auto& trace = debugger.trace();
+
+    assert(result.reason == sim::DebugStopReason::StepComplete);
+    assert(trace.size() == 1);
+    assert(trace.at(0).pcBefore == 0);
+    assert(trace.at(0).pcAfter == sim::Memory::instruction_size);
+    assert(sameInstruction(trace.at(0).instruction, program.at(0)));
+}
+
+void tracing_records_continue_execution()
+{
+    const std::vector<sim::EncodedInstruction> program{
+        sim::makeMov(sim::Register::R1, 5),
+        sim::makeMov(sim::Register::R2, 7),
+        sim::makeAdd(sim::Register::R1, sim::Register::R2),
+        sim::makeHalt(),
+    };
+
+    sim::CPU cpu;
+    cpu.loadProgram(program);
+    sim::Debugger debugger(cpu);
+    debugger.enableTracing(true);
+
+    const auto result = debugger.continueExecution();
+    const auto& trace = debugger.trace();
+
+    assert(result.reason == sim::DebugStopReason::Halted);
+    assert(trace.size() == program.size());
+    assert(trace.at(0).pcBefore == 0);
+    assert(trace.at(0).pcAfter == sim::Memory::instruction_size);
+    assert(sameInstruction(trace.at(0).instruction, program.at(0)));
+    assert(trace.at(3).pcBefore == 3 * sim::Memory::instruction_size);
+    assert(trace.at(3).pcAfter == 4 * sim::Memory::instruction_size);
+    assert(sameInstruction(trace.at(3).instruction, program.at(3)));
+}
+
+void tracing_captures_branch_pc_after()
+{
+    const std::vector<sim::EncodedInstruction> program{
+        sim::makeJmp(2 * sim::Memory::instruction_size),
+        sim::makeMov(sim::Register::R1, 99),
+        sim::makeHalt(),
+    };
+
+    sim::CPU cpu;
+    cpu.loadProgram(program);
+    sim::Debugger debugger(cpu);
+    debugger.enableTracing(true);
+
+    const auto result = debugger.step();
+    const auto& trace = debugger.trace();
+
+    assert(result.reason == sim::DebugStopReason::StepComplete);
+    assert(trace.size() == 1);
+    assert(trace.at(0).pcBefore == 0);
+    assert(trace.at(0).pcAfter == 2 * sim::Memory::instruction_size);
+    assert(sameInstruction(trace.at(0).instruction, program.at(0)));
+}
+
+void tracing_skips_breakpoint_stops_and_halted_steps()
+{
+    const std::vector<sim::EncodedInstruction> program{
+        sim::makeMov(sim::Register::R1, 5),
+        sim::makeHalt(),
+    };
+
+    sim::CPU cpu;
+    cpu.loadProgram(program);
+    sim::Debugger debugger(cpu);
+    debugger.enableTracing(true);
+    debugger.addBreakpoint(0);
+
+    const auto breakpointResult = debugger.continueExecution();
+    assert(breakpointResult.reason == sim::DebugStopReason::Breakpoint);
+    assert(debugger.trace().empty());
+
+    debugger.clearBreakpoints();
+    const auto haltResult = debugger.continueExecution();
+    assert(haltResult.reason == sim::DebugStopReason::Halted);
+    assert(debugger.trace().size() == 2);
+
+    const auto haltedStep = debugger.step();
+    assert(haltedStep.reason == sim::DebugStopReason::Halted);
+    assert(debugger.trace().size() == 2);
+}
+
+void tracing_can_be_cleared_and_disabled()
+{
+    const std::vector<sim::EncodedInstruction> program{
+        sim::makeMov(sim::Register::R1, 5),
+        sim::makeMov(sim::Register::R2, 7),
+        sim::makeHalt(),
+    };
+
+    sim::CPU cpu;
+    cpu.loadProgram(program);
+    sim::Debugger debugger(cpu);
+    debugger.enableTracing(true);
+
+    const auto firstStep = debugger.step();
+    assert(firstStep.reason == sim::DebugStopReason::StepComplete);
+    assert(debugger.trace().size() == 1);
+
+    debugger.clearTrace();
+    assert(debugger.trace().empty());
+
+    debugger.enableTracing(false);
+    const auto secondStep = debugger.step();
+    assert(secondStep.reason == sim::DebugStopReason::StepComplete);
+    assert(debugger.trace().empty());
+}
+
 int main()
 {
     step_executes_one_instruction();
@@ -364,4 +506,10 @@ int main()
     memory_dump_includes_little_endian_bytes();
     memory_dump_wraps_after_sixteen_bytes();
     memory_dump_rejects_out_of_range_requests();
+    tracing_is_disabled_by_default();
+    tracing_records_step_execution();
+    tracing_records_continue_execution();
+    tracing_captures_branch_pc_after();
+    tracing_skips_breakpoint_stops_and_halted_steps();
+    tracing_can_be_cleared_and_disabled();
 }

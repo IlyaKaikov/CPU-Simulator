@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 namespace sim {
 
@@ -19,6 +20,12 @@ enum class DebugStopReason {
 
 struct DebugStepResult {
     DebugStopReason reason{DebugStopReason::StepComplete};
+    std::uint32_t pcBefore{};
+    std::uint32_t pcAfter{};
+    EncodedInstruction instruction{};
+};
+
+struct TraceEntry {
     std::uint32_t pcBefore{};
     std::uint32_t pcAfter{};
     EncodedInstruction instruction{};
@@ -39,9 +46,15 @@ public:
     [[nodiscard]] std::string dumpRegisters() const;
     [[nodiscard]] std::string dumpMemory(std::uint32_t startAddress, std::size_t byteCount) const;
 
+    void enableTracing(bool enabled);
+    void clearTrace();
+    [[nodiscard]] const std::vector<TraceEntry>& trace() const;
+
 private:
     CPU& cpu_;
     std::unordered_set<std::uint32_t> breakpoints_;
+    bool tracingEnabled_{false};
+    std::vector<TraceEntry> trace_;
 };
 
 }

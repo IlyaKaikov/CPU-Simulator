@@ -25,11 +25,20 @@ DebugStepResult Debugger::step()
 
     const auto instruction = cpu_.memory().readInstruction(pcBefore);
     cpu_.step();
+    const auto pcAfter = cpu_.pc();
+
+    if (tracingEnabled_) {
+        trace_.push_back(TraceEntry{
+            pcBefore,
+            pcAfter,
+            instruction,
+        });
+    }
 
     return DebugStepResult{
         cpu_.halted() ? DebugStopReason::Halted : DebugStopReason::StepComplete,
         pcBefore,
-        cpu_.pc(),
+        pcAfter,
         instruction,
     };
 }
@@ -132,6 +141,21 @@ std::string Debugger::dumpMemory(std::uint32_t startAddress, std::size_t byteCou
     }
 
     return output.str();
+}
+
+void Debugger::enableTracing(bool enabled)
+{
+    tracingEnabled_ = enabled;
+}
+
+void Debugger::clearTrace()
+{
+    trace_.clear();
+}
+
+const std::vector<TraceEntry>& Debugger::trace() const
+{
+    return trace_;
 }
 
 }
