@@ -1,4 +1,4 @@
-#include "binary/ProgramBinary.hpp"
+#include "ProgramBinary.hpp"
 
 #include <algorithm>
 #include <fstream>

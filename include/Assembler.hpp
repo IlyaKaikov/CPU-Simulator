@@ -1,6 +1,6 @@
 #pragma once
 
-#include "isa/Instruction.hpp"
+#include "Instruction.hpp"
 
 #include <cstddef>
 #include <stdexcept>

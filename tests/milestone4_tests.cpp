@@ -1,7 +1,7 @@
-#include "assembler/Assembler.hpp"
-#include "cpu/CPU.hpp"
-#include "isa/Instruction.hpp"
-#include "memory/Memory.hpp"
+#include "Assembler.hpp"
+#include "CPU.hpp"
+#include "Instruction.hpp"
+#include "Memory.hpp"
 
 #include <cassert>
 #include <cstddef>

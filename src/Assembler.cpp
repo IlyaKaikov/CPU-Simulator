@@ -1,5 +1,5 @@
-#include "assembler/Assembler.hpp"
-#include "memory/Memory.hpp"
+#include "Assembler.hpp"
+#include "Memory.hpp"
 
 #include <cctype>
 #include <cstdint>

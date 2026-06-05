@@ -1,4 +1,4 @@
-#include "memory/Memory.hpp"
+#include "Memory.hpp"
 
 #include <stdexcept>
 #include <string>

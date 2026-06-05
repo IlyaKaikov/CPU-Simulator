@@ -1,7 +1,8 @@
 # Milestone Roadmap
 
-## Milestone 1 - CPU Skeleton
-Implement:
+## Milestone 1 - CPU Skeleton - Complete
+
+Implemented:
 - registers
 - memory
 - instruction decoding
@@ -24,8 +25,9 @@ R1 = 12
 
 ---
 
-## Milestone 2 - Control Flow
-Implement:
+## Milestone 2 - Control Flow - Complete
+
+Implemented:
 - SUB
 - MUL
 - CMP
@@ -38,8 +40,9 @@ Goal:
 
 ---
 
-## Milestone 3 - Memory + Stack
-Implement:
+## Milestone 3 - Memory + Stack - Complete
+
+Implemented:
 - LOAD
 - STORE
 - PUSH
@@ -53,8 +56,9 @@ Goal:
 
 ---
 
-## Milestone 4 - Assembler
-Implement:
+## Milestone 4 - Assembler - Complete
+
+Implemented:
 - lexer/parser
 - comments and blank lines
 - decimal and hex numbers
@@ -68,8 +72,9 @@ Goal:
 
 ---
 
-## Milestone 5 - Binary Format + Loader
-Implement:
+## Milestone 5 - Binary Format + Loader - Complete
+
+Implemented:
 - binary file format
 - binary writer
 - binary reader/loader
@@ -82,22 +87,28 @@ Goal:
 
 ---
 
-## Milestone 6 - Debugger
-Implement:
+## Milestone 6 - Debugger - Complete
+
+Implemented:
 - step
 - continue
 - breakpoints
 - register dump
 - memory dump
 - execution tracing
+- deterministic CLI debug command
 
 ---
 
-## Milestone 7 - Polish
-Implement:
-- tests
-- example programs
-- README
+## Milestone 7 - Polish - Complete
+
+Implemented:
+- final README pass
+- documentation cleanup
 - architecture diagrams
-- disassembler (optional)
-- performance counters (optional)
+- example program cleanup
+- final build/test/CLI validation
+
+Deferred optional ideas:
+- disassembler
+- performance counters

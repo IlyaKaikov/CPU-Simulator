@@ -7,12 +7,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(cpu_simulator
-    src/assembler/Assembler.cpp
-    src/binary/ProgramBinary.cpp
-    src/cpu/CPU.cpp
-    src/debugger/Debugger.cpp
-    src/isa/Instruction.cpp
-    src/memory/Memory.cpp
+    src/Assembler.cpp
+    src/CPU.cpp
+    src/Debugger.cpp
+    src/Instruction.cpp
+    src/Memory.cpp
+    src/ProgramBinary.cpp
 )
 
 target_include_directories(cpu_simulator

@@ -1,4 +1,4 @@
-#include "isa/Instruction.hpp"
+#include "Instruction.hpp"
 
 namespace sim {
 

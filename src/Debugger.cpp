@@ -1,4 +1,4 @@
-#include "debugger/Debugger.hpp"
+#include "Debugger.hpp"
 
 #include <iomanip>
 #include <sstream>

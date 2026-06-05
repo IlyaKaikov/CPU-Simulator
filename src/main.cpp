@@ -1,8 +1,8 @@
-#include "assembler/Assembler.hpp"
-#include "binary/ProgramBinary.hpp"
-#include "cpu/CPU.hpp"
-#include "debugger/Debugger.hpp"
-#include "isa/Instruction.hpp"
+#include "Assembler.hpp"
+#include "CPU.hpp"
+#include "Debugger.hpp"
+#include "Instruction.hpp"
+#include "ProgramBinary.hpp"
 
 #include <algorithm>
 #include <filesystem>

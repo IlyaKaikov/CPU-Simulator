@@ -1,7 +1,7 @@
 #pragma once
 
-#include "cpu/CPU.hpp"
-#include "isa/Instruction.hpp"
+#include "CPU.hpp"
+#include "Instruction.hpp"
 
 #include <cstddef>
 #include <cstdint>

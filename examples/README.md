@@ -2,28 +2,34 @@
 
 These assembly files are small fixtures for manual testing and assembler/binary-loader workflows.
 
-Implemented milestone examples:
-- `milestone1.asm`
-- `milestone2_arithmetic.asm`
-- `milestone2_cmp_equal.asm`
-- `milestone2_cmp_less.asm`
-- `milestone2_jmp_skip.asm`
-- `milestone2_loop_sum.asm`
-- `milestone2_countdown.asm`
-- `milestone3_memory_preview.asm`
-- `milestone3_push_preview.asm`
-- `milestone3_stack_preview.asm`
-- `milestone5_binary_roundtrip.asm`
-- `milestone6_debug_trace.asm`
+Implemented examples:
+- `milestone1.asm`: basic `MOV`, `ADD`, and `HALT`
+- `milestone2_arithmetic.asm`: arithmetic operations
+- `milestone2_cmp_equal.asm`: equality comparison and conditional branch
+- `milestone2_cmp_less.asm`: less-than comparison and conditional branch
+- `milestone2_jmp_skip.asm`: unconditional jump
+- `milestone2_loop_sum.asm`: loop that sums 3 + 2 + 1
+- `milestone2_countdown.asm`: countdown loop
+- `milestone3_memory_preview.asm`: `STORE` and `LOAD`
+- `milestone3_push_preview.asm`: repeated `PUSH` and `POP`
+- `milestone3_stack_preview.asm`: stack order with two registers
+- `milestone5_binary_roundtrip.asm`: binary writer/loader fixture
+- `milestone6_debug_trace.asm`: debugger trace fixture
 
-The milestone 5 fixture can be assembled and run as a binary program:
+Run all assembly examples:
+
+```powershell
+.\build-mingw\cpu_sim.exe
+```
+
+Assemble and run a binary fixture:
 
 ```powershell
 .\build-mingw\cpu_sim.exe assemble examples\milestone5_binary_roundtrip.asm build-mingw\milestone5_binary_roundtrip.bin
 .\build-mingw\cpu_sim.exe run build-mingw\milestone5_binary_roundtrip.bin
 ```
 
-The milestone 6 fixture can be assembled and inspected with debugger tracing:
+Assemble and inspect a debugger trace fixture:
 
 ```powershell
 .\build-mingw\cpu_sim.exe assemble examples\milestone6_debug_trace.asm build-mingw\milestone6_debug_trace.bin

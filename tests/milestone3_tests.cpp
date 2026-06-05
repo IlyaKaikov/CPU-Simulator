@@ -1,6 +1,6 @@
-#include "cpu/CPU.hpp"
-#include "isa/Instruction.hpp"
-#include "memory/Memory.hpp"
+#include "CPU.hpp"
+#include "Instruction.hpp"
+#include "Memory.hpp"
 
 #include <array>
 #include <cassert>

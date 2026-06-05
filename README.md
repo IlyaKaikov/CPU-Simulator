@@ -1,19 +1,28 @@
 # CPU Simulator
 
-A small C++20 RISC-style CPU simulator with a simple assembler.
+A C++20 RISC-style CPU simulator with an assembler, binary program format, loader, and debugger.
 
-The simulator currently supports:
+This project demonstrates:
+- fixed-width instruction encoding
+- register, memory, flag, stack, and call/return execution
+- assembly parsing with labels and useful line-numbered errors
+- binary program serialization and validation
+- debugger control with stepping, continue, breakpoints, dumps, and tracing
+- clean CMake-based project structure and milestone-focused tests
+
+## Features
+
 - 8 general-purpose registers: `R0`-`R7`
 - 64 KB byte-addressable memory
 - fixed-width 4-byte encoded instructions
-- flags: zero flag (`ZF`) and sign flag (`SF`)
-- memory words as signed 32-bit little-endian values
+- signed 32-bit memory words
+- zero and sign flags
 - downward-growing stack
-- assembler input from `.asm` text
-- versioned binary program files
-- debugger stepping, breakpoints, dumps, and execution tracing
+- `.asm` source assembly
+- versioned `CSIM` binary program files
+- deterministic debugger CLI output
 
-## Implemented ISA
+## ISA
 
 ```text
 NOP
@@ -36,10 +45,6 @@ RET
 HALT
 ```
 
-The assembler supports comments, blank lines, decimal numbers, hex numbers, labels, and line-numbered `AssemblyError` diagnostics.
-
-Binary programs use a `CSIM` magic header, version `1`, and the same fixed-width 4-byte instruction layout used by simulated memory. See [docs/binary_format.md](docs/binary_format.md).
-
 Example:
 
 ```asm
@@ -56,9 +61,30 @@ JG loop
 HALT
 ```
 
-## Build
+See [docs/ISA.md](docs/ISA.md) for the ISA summary and [docs/binary_format.md](docs/binary_format.md) for the binary format.
 
-Install a C++20 compiler and CMake.
+## Architecture
+
+```text
+.asm source
+  -> Assembler
+  -> EncodedInstruction program
+  -> Binary writer
+  -> .bin file
+  -> Binary loader
+  -> CPU
+  -> Debugger
+```
+
+Main modules:
+- `cpu`: fetch/decode/execute loop and register/flag state
+- `memory`: byte, word, and instruction storage
+- `isa`: opcodes and instruction constructors
+- `assembler`: source parsing and label resolution
+- `binary`: binary writer/reader and header validation
+- `debugger`: stepping, continue, breakpoints, dumps, and tracing
+
+## Build And Test
 
 The current local build uses MinGW:
 
@@ -83,53 +109,44 @@ cmake --build --preset default
 ctest --preset default -C Debug
 ```
 
-## Run Demo
+## CLI
 
-The demo executable discovers every `.asm` file in `examples/`, assembles each file, runs it on a fresh CPU, and prints the final CPU state.
+Run every `.asm` example in `examples/`:
 
 ```powershell
 .\build-mingw\cpu_sim.exe
 ```
 
-Example output shape:
-
-```text
-examples\milestone1.asm
-  halted = 1
-  R0 = 0
-  R1 = 12
-  R2 = 7
-  ...
-  ZF = 0
-  SF = 0
-  PC = 0x10
-  SP = 0x10000
-```
-
-## Binary CLI
-
-Assemble an `.asm` source file into a binary program:
-
-```powershell
-.\build-mingw\cpu_sim.exe assemble examples\milestone5_binary_roundtrip.asm build-mingw\milestone5_binary_roundtrip.bin
-```
-
-Load and run a binary program:
-
-```powershell
-.\build-mingw\cpu_sim.exe run build-mingw\milestone5_binary_roundtrip.bin
-```
-
-## Debugger CLI
-
-Run a binary program through the debugger and print the final register dump plus execution trace:
+Assemble source into a binary program:
 
 ```powershell
 .\build-mingw\cpu_sim.exe assemble examples\milestone6_debug_trace.asm build-mingw\milestone6_debug_trace.bin
+```
+
+Run a binary program:
+
+```powershell
+.\build-mingw\cpu_sim.exe run build-mingw\milestone6_debug_trace.bin
+```
+
+Debug a binary program and print the final register dump plus execution trace:
+
+```powershell
 .\build-mingw\cpu_sim.exe debug build-mingw\milestone6_debug_trace.bin
 ```
 
-The debugger module also supports single-step execution, continue, breakpoints, register dumps, memory dumps, and opt-in trace collection from C++ tests/code.
+Run/debug output includes final CPU state such as registers, flags, `PC`, and `SP`. Debug output also includes trace rows with `pcBefore`, `pcAfter`, opcode, and operands.
+
+## Examples
+
+The `examples/` directory includes small assembly programs covering:
+- milestone 1 arithmetic basics
+- milestone 2 branching and comparisons
+- milestone 3 memory and stack operations
+- milestone 5 binary round trips
+- milestone 6 debugger tracing
+
+Generated `.bin` files are build artifacts and are not intended to be checked in.
 
 ## Tests
 
@@ -149,15 +166,14 @@ Run all tests:
 ctest --test-dir build-mingw --output-on-failure
 ```
 
-## Roadmap
+## Roadmap Status
 
 See [docs/milestones.md](docs/milestones.md).
 
-Current state:
 - Milestone 1: CPU skeleton - complete
 - Milestone 2: control flow - complete
 - Milestone 3: memory + stack - complete
-- Milestone 4: assembler to `EncodedInstruction` programs - complete
+- Milestone 4: assembler - complete
 - Milestone 5: binary format + loader - complete
 - Milestone 6: debugger - complete
-- Milestone 7 next: polish
+- Milestone 7: final polish - complete

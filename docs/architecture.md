@@ -1,28 +1,41 @@
-# Architecture Plan
+# Architecture
 
-## Main Modules
+## Module Overview
+
 ```text
-cpu/
-memory/
-isa/
-assembler/
-binary/
-debugger/
+include/
+src/
 tests/
 examples/
 ```
 
-## CPU Execution Flow
+The `include/` and `src/` directories are intentionally flat. Each subsystem has one public header and one implementation file where applicable.
+
+## Execution Flow
+
 ```text
-Fetch → Decode → Execute
+Fetch -> Decode -> Execute
 ```
 
-## Recommended Core Types
+```mermaid
+flowchart LR
+    Source[".asm source"] --> Assembler
+    Assembler --> Program["EncodedInstruction program"]
+    Program --> Writer["Binary writer"]
+    Writer --> Binary[".bin file"]
+    Binary --> Loader["Binary loader"]
+    Loader --> CPU
+    CPU --> Debugger
+```
+
+## Core Types
 
 ### OpCode
-Enum of all instructions.
+
+Enum of all supported instructions.
 
 ### EncodedInstruction
+
 ```cpp
 struct EncodedInstruction {
     uint8_t opcode;
@@ -31,37 +44,49 @@ struct EncodedInstruction {
 };
 ```
 
+Each instruction is encoded as 4 bytes.
+
+## Modules
+
 ### CPU
+
 Responsibilities:
 - execute instructions
 - maintain registers
 - update PC/SP
 - update flags
-- manage execution state
+- manage halted state
 
 ### Memory
+
 Responsibilities:
 - read/write bytes
-- read/write instructions
-- stack operations
+- read/write signed 32-bit words
+- read/write encoded instructions
+- enforce memory bounds
 
 ### Assembler
+
 Responsibilities:
-- parse assembly
-- resolve labels
+- parse assembly text
+- ignore comments and blank lines
+- resolve labels to byte addresses
 - encode instructions
+- report line-numbered assembly errors
 
 ### Binary Program Format
+
 Responsibilities:
 - write assembled programs to versioned binary files
 - validate binary headers
 - load binary files back into `EncodedInstruction` programs
 
 ### Debugger
+
 Responsibilities:
-- stepping
-- continuing until halt, breakpoint, or step budget
-- breakpoints
-- memory/register inspection
+- single-step execution
+- continue until halt, breakpoint, or step budget
+- breakpoint management
+- register and memory dumps
 - execution tracing
 - deterministic CLI debug output for binary programs

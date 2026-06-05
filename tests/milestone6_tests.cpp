@@ -1,7 +1,7 @@
-#include "cpu/CPU.hpp"
-#include "debugger/Debugger.hpp"
-#include "isa/Instruction.hpp"
-#include "memory/Memory.hpp"
+#include "CPU.hpp"
+#include "Debugger.hpp"
+#include "Instruction.hpp"
+#include "Memory.hpp"
 
 #include <cassert>
 #include <cstdint>

@@ -1,4 +1,4 @@
-#include "cpu/CPU.hpp"
+#include "CPU.hpp"
 
 #include <stdexcept>
 #include <string>
