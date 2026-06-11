@@ -65,17 +65,6 @@ See [docs/ISA.md](docs/ISA.md) for the ISA summary and [docs/binary_format.md](d
 
 ## Architecture
 
-```text
-.asm source
-  -> Assembler
-  -> EncodedInstruction program
-  -> Binary writer
-  -> .bin file
-  -> Binary loader
-  -> CPU
-  -> Debugger
-```
-
 Main modules:
 - `cpu`: fetch/decode/execute loop and register/flag state
 - `memory`: byte, word, and instruction storage
@@ -146,8 +135,6 @@ The `examples/` directory includes small assembly programs covering:
 - milestone 5 binary round trips
 - milestone 6 debugger tracing
 
-Generated `.bin` files are build artifacts and are not intended to be checked in.
-
 ## Tests
 
 Tests are split by milestone:
@@ -165,15 +152,3 @@ Run all tests:
 ```powershell
 ctest --test-dir build-mingw --output-on-failure
 ```
-
-## Roadmap Status
-
-See [docs/milestones.md](docs/milestones.md).
-
-- Milestone 1: CPU skeleton - complete
-- Milestone 2: control flow - complete
-- Milestone 3: memory + stack - complete
-- Milestone 4: assembler - complete
-- Milestone 5: binary format + loader - complete
-- Milestone 6: debugger - complete
-- Milestone 7: final polish - complete
